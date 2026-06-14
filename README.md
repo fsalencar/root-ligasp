@@ -11,6 +11,7 @@ Ferramenta web para o jogo de tabuleiro **Root** (Leder Games), criada para a **
 | Aba | O que faz |
 |---|---|
 | ⚔ Sorteio de Facções | Sorteia facções seguindo as regras oficiais de Alcance da Leder Games |
+| 🗺️ Sortear apenas Mapas e/ou Clareiras | Sorteia mapa e naipes das clareiras de forma independente |
 | 🏆 Gerar Resultado para a Liga | Gera o texto formatado da partida, pronto para colar no WhatsApp |
 
 ---
@@ -37,7 +38,7 @@ Marque quais expansões vocês têm na mesa:
 | Expansão Saqueadores | Senhor das Centenas, Guardiões de Ferro |
 | Expansão Pátria | Diáspora dos Nenúfares, Conselho do Crepúsculo, Patifes da Floresta |
 
-> **Malandro 2** aparece como sub-opção dentro de Ribeirinhos. Marque se quiser permitir dois Malandros na mesma partida.
+> **Malandro 2** aparece como sub-opção dentro de Ribeirinhos e só entra no sorteio se o Malandro 1 também estiver disponível.
 
 ### 4. Mapas disponíveis
 
@@ -45,15 +46,12 @@ Marque um ou mais mapas. Se marcar mais de um, o mapa também será **sorteado a
 
 Mapas disponíveis: **Outono**, **Inverno**, **Lago**, **Montanha**.
 
-### 5. Sorteio de clareiras *(opcional)*
+### 5. Opções de sorteio
 
-Ative o toggle para sortear os naipes de cada clareira do mapa sorteado.
-
-- 🦊 **Raposa** (vermelho)
-- 🐭 **Rato** (laranja)
-- 🐇 **Coelho** (amarelo)
-
-> **Manter clareiras de canto:** mantém os cantos com os naipes do mapa oficial. Desmarque para redistribuir tudo livremente.
+- **Sortear deck de cartas** — sorteia entre Deck Base e Exilados & Partisans
+- **Garantir insurgentes** — aparece com 3 ou mais jogadores; permite forçar ao menos 1, 2 ou 3 facções insurgentes no grupo
+- **Sortear naipes das clareiras** — distribui 🦊 Raposa, 🐭 Rato e 🐇 Coelho pelas clareiras do mapa
+  - *Manter clareiras de canto:* mantém os cantos com os naipes do mapa oficial; desmarque para redistribuir tudo livremente
 
 ### 6. Sortear
 
@@ -62,6 +60,7 @@ Clique em **⚔ Sortear** e o resultado aparece abaixo com:
 - **Ordem de preparação** — militantes primeiro, insurgentes depois (regra oficial)
 - **Ordem de jogo** — sorteada aleatoriamente
 - **Mapa sorteado** — se mais de um foi selecionado
+- **Deck sorteado** — se a opção foi ativada
 - **Diagrama de clareiras** — naipes coloridos sobre o mapa (se ativado)
 - **Resumo** — alcance total e contagem de facções
 
@@ -83,14 +82,30 @@ O sorteio segue as regras oficiais de Alcance mínimo por número de jogadores:
 
 ---
 
+## 🗺️ Como usar — Sortear apenas Mapas e/ou Clareiras
+
+Use esta aba quando quiser sortear **somente o mapa e/ou as clareiras**, sem sortear facções.
+
+1. Selecione um ou mais mapas
+2. Ative o sorteio de clareiras se desejar
+3. Clique em **🗺️ Sortear**
+4. Use **↺ Sortear novamente** para rolar de novo sem reconfigurar
+
+---
+
 ## 🏆 Como usar — Gerar Resultado para a Liga
 
 ### 1. Informações da partida
 
-- **Local:** onde a partida aconteceu
-- **Data:** preenchida automaticamente com hoje; clique para alterar
+- **Local** — onde a partida aconteceu
+- **Data** — preenchida automaticamente com hoje; clique para alterar
+- **Mapa** — selecione o mapa utilizado na partida
 
-### 2. Jogadores
+### 2. Número de jogadores
+
+Selecione de **3 a 6 jogadores**.
+
+### 3. Jogadores
 
 Para cada jogador preencha:
 
@@ -103,14 +118,12 @@ Para cada jogador preencha:
 - **Iniciante?** *(disponível a partir do Jogador 2)*
 - **Vitória por Domínio** ou **Derrota por Domínio** *(mutuamente exclusivos — dispensam pontuação)*
 
-### 3. Gerar resultado
+### 4. Gerar resultado
 
-Clique em **📋 Gerar Gerar Resultado para a Liga**.
-
-O texto segue o formato oficial da liga:
+Clique em **📋 Gerar Resultado para a Liga**. O texto segue o formato oficial:
 
 ```
-Liv Toys 24/05
+Casa do Felipe 24/05 | Mapa Outono
 Vinicius Bárbaro (Iniciante) - Lagartos Cultistas Vitória por Domínio
 Felipe Alencar - Guardiões de Ferro 28
 Erick Oliveira (Iniciante) - Dinastia das Rapinas 24
@@ -119,13 +132,44 @@ Alexandre Chazan (Iniciante) - Marqueses 7
 
 **Ordenação automática:**
 
-- Vitória por Domínio → aparece no topo
+- Vitória por Domínio → topo
 - Maior pontuação → ordem decrescente
 - Derrota por Domínio → sempre por último
 
-### 4. Copiar
+### 5. Compartilhar
 
-Clique em **📋 Copiar** para copiar o texto e colar direto no WhatsApp, Discord ou onde preferir.
+- **📋 Copiar** — copia o texto para colar onde quiser
+- **📲 WhatsApp** — abre direto o WhatsApp com o texto preenchido
+
+---
+
+## 🎨 Legenda de cores — Clareiras
+
+| Cor | Naipe |
+|---|---|
+| 🔴 Vermelho | Raposa |
+| 🟠 Laranja | Rato |
+| 🟡 Amarelo | Coelho |
+
+---
+
+## 🃏 Facções por tipo
+
+| Facção | Tipo | Expansão |
+|---|---|---|
+| Marqueses | Militante | Base |
+| Dinastia das Rapinas | Militante | Base |
+| Aliança da Floresta | Insurgente | Base |
+| Malandro / Malandro 2 | Insurgente | Base / Ribeirinhos |
+| Compania Ribeirinha | Insurgente | Ribeirinhos |
+| Lagartos Cultistas | Insurgente | Ribeirinhos |
+| Ducado Subterrâneo | Militante | Submundo |
+| Conspiração Corvídea | Insurgente | Submundo |
+| Senhor das Centenas | Militante | Saqueadores |
+| Guardiões de Ferro | Militante | Saqueadores |
+| Diáspora dos Nenúfares | Militante | Pátria |
+| Conselho do Crepúsculo | Insurgente | Pátria |
+| Patifes da Floresta | Insurgente | Pátria |
 
 ---
 
