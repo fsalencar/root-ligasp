@@ -583,9 +583,29 @@
     </div>
   </div>
 
-  <!-- Clareiras -->
+  <!-- Opções extras -->
   <div class="section">
-    <div class="section-title">Sorteio de clareiras</div>
+    <div class="section-title">Opções de sorteio</div>
+
+    <!-- Deck -->
+    <label class="clearing-toggle-row" id="deckToggleRow">
+      <input type="checkbox" id="deckToggle" onchange="toggleDeck(this.checked)">
+      <div>
+        <div class="clearing-toggle-label">Sortear deck de cartas</div>
+        <div class="clearing-toggle-sub">Escolhe entre Deck Base e Exilados &amp; Partisans</div>
+      </div>
+    </label>
+
+    <!-- Garantir insurgente (só aparece com 3 jogadores) -->
+    <label class="clearing-toggle-row" id="insurgentToggleRow" style="display:none;">
+      <input type="checkbox" id="insurgentToggle" onchange="garantirInsurgente=this.checked">
+      <div>
+        <div class="clearing-toggle-label">Garantir ao menos 1 insurgente</div>
+        <div class="clearing-toggle-sub">Com 3 jogadores, força ao menos uma facção insurgente no grupo</div>
+      </div>
+    </label>
+
+    <!-- Clareiras -->
     <label class="clearing-toggle-row" id="clearingToggleRow">
       <input type="checkbox" id="clearingToggle" onchange="toggleClearing(this.checked)">
       <div>
@@ -630,6 +650,18 @@
         <div class="liga-field"><label>Local da Partida</label><input type="text" id="ligaLocal" placeholder="Ex: Casa do Felipe"></div>
         <div class="liga-field"><label>Data</label><input type="date" id="ligaData"></div>
       </div>
+      <div class="liga-field-row">
+        <div class="liga-field"><label>Mapa utilizado</label>
+          <select id="ligaMapa">
+            <option value="">— Selecione o mapa —</option>
+            <option value="Outono">🍂 Outono</option>
+            <option value="Inverno">❄️ Inverno</option>
+            <option value="Lago">🌊 Lago</option>
+            <option value="Montanha">⛰️ Montanha</option>
+          </select>
+        </div>
+
+      </div>
     </div>
 
     <div id="ligaPlayersWrap"></div>
@@ -665,7 +697,7 @@ const FACTIONS = {
   alliance:   { name: 'Aliança da Floresta',     reach: 3,  type: 'insurgent', exp: 'base',       accent: 'alliance' },
   vagabond:   { name: 'Malandro',                reach: 5,  type: 'insurgent', exp: 'base',       accent: 'vagabond' },
   lizard:     { name: 'Lagartos Cultistas',      reach: 2,  type: 'insurgent', exp: 'riverfolk',  accent: 'lizard' },
-  riverfolk:  { name: 'Compania Ribeirinha',     reach: 5,  type: 'militant',  exp: 'riverfolk',  accent: 'riverfolk' },
+  riverfolk:  { name: 'Compania Ribeirinha',     reach: 5,  type: 'insurgent', exp: 'riverfolk',  accent: 'riverfolk' },
   duchy:      { name: 'Ducado Subterrâneo',      reach: 8,  type: 'militant',  exp: 'underworld', accent: 'duchy' },
   corvid:     { name: 'Conspiração Corvídea',    reach: 3,  type: 'insurgent', exp: 'underworld', accent: 'corvid' },
   hundreds:   { name: 'Senhor das Centenas',     reach: 9,  type: 'militant',  exp: 'marauder',   accent: 'hundreds' },
@@ -785,6 +817,8 @@ let allowV2 = false;
 let selectedMaps = new Set(['autumn']);
 let sortearClareiras = false;
 let manterCantos = true;
+let sortearDeck = false;
+let garantirInsurgente = false;
 
 // ===================== INIT =====================
 function init() {
@@ -799,8 +833,13 @@ function init() {
 function renderCountBtns() {
   document.querySelectorAll('.count-btn').forEach(btn => {
     btn.classList.toggle('active', parseInt(btn.dataset.n) === numPlayers);
-    btn.onclick = () => { numPlayers = parseInt(btn.dataset.n); renderCountBtns(); renderPlayersGrid(); updateReachInfo(); };
+    btn.onclick = () => { numPlayers = parseInt(btn.dataset.n); renderCountBtns(); renderPlayersGrid(); updateReachInfo(); updateInsurgentToggle(); };
   });
+}
+
+function updateInsurgentToggle() {
+  const row = document.getElementById('insurgentToggleRow');
+  if (row) row.style.display = numPlayers === 3 ? 'flex' : 'none';
 }
 
 function renderPlayersGrid() {
@@ -824,7 +863,7 @@ function renderExpansions() {
     const row = document.createElement('label');
     row.className = 'exp-row' + (selectedExpansions.has(exp.id) ? ' selected' : '');
     row.innerHTML = `
-      <input type="checkbox" ${exp.id==='base'?'disabled checked':selectedExpansions.has(exp.id)?'checked':''}>
+      <input type="checkbox" ${selectedExpansions.has(exp.id)?'checked':''}>
       <div style="flex:1">
         <div class="exp-name">${exp.name}</div>
         <div class="exp-facs">${exp.desc}</div>
@@ -890,6 +929,11 @@ function updateMapNote() {
 }
 
 // ===================== CLAREIRAS =====================
+function toggleDeck(checked) {
+  sortearDeck = checked;
+  document.getElementById('deckToggleRow').classList.toggle('active', checked);
+}
+
 function toggleClearing(checked) {
   sortearClareiras = checked;
   document.getElementById('clearingToggleRow').classList.toggle('active', checked);
@@ -959,6 +1003,10 @@ function sortear() {
   const mapArr = MAPS.filter(m => selectedMaps.has(m.id));
   const chosenMap = mapArr.length === 1 ? mapArr[0] : mapArr[Math.floor(Math.random()*mapArr.length)];
 
+  // Deck
+  const DECKS = ['Deck Base', 'Exilados & Partisans'];
+  const chosenDeck = sortearDeck ? DECKS[Math.floor(Math.random()*DECKS.length)] : null;
+
   // Clareiras
   let clearingResult = null;
   if (sortearClareiras) {
@@ -966,7 +1014,7 @@ function sortear() {
     clearingResult = drawClearings(chosenMap, manterCantos);
   }
 
-  renderResult(facResult, names, chosenMap, mapArr.length > 1, clearingResult);
+  renderResult(facResult, names, chosenMap, mapArr.length > 1, clearingResult, chosenDeck);
 }
 
 function showError(msg) {
@@ -976,10 +1024,16 @@ function showError(msg) {
 }
 
 function drawFactions(avail, n, minReach) {
-  const militants = avail.filter(f => f.type==='militant');
   for (let attempt = 0; attempt < 600; attempt++) {
     const candidate = shuffle(avail).slice(0, n);
-    if (!candidate.some(f => f.type==='militant') && n >= 2) continue;
+    const hasMilitant = candidate.some(f => f.type==='militant');
+    const hasInsurgent = candidate.some(f => f.type==='insurgent');
+    if (!hasMilitant && n >= 2) continue;
+    if (garantirInsurgente && n === 3 && !hasInsurgent) continue;
+    // Malandro 2 só pode entrar se o Malandro 1 também estiver no grupo
+    const hasV2 = candidate.some(f => f.id === 'vagabond2');
+    const hasV1 = candidate.some(f => f.id === 'vagabond');
+    if (hasV2 && !hasV1) continue;
     if (candidate.reduce((s,f) => s+f.reach, 0) < minReach) continue;
     const mil = candidate.filter(f => f.type==='militant');
     const ins = candidate.filter(f => f.type==='insurgent');
@@ -1031,15 +1085,16 @@ function drawClearings(map, keepCorners) {
 }
 
 // ===================== RENDER RESULTADO =====================
-function renderResult(facResult, names, chosenMap, wasDrawn, clearingResult) {
+function renderResult(facResult, names, chosenMap, wasDrawn, clearingResult, chosenDeck) {
   const section = document.getElementById('resultSection');
   const cards = document.getElementById('resultCards');
   const summary = document.getElementById('summaryBox');
   const mapDiv = document.getElementById('resultMap');
   const clearDiv = document.getElementById('resultClearing');
 
-  document.getElementById('resultSubtitle').textContent =
-    `${names.length} jogadores · ${chosenMap.name} · Alcance total: ${facResult.totalReach}`;
+  let subtitleParts = [names.length + ' jogadores', chosenMap.name, 'Alcance: ' + facResult.totalReach];
+  if (chosenDeck) subtitleParts.push('🃏 ' + chosenDeck);
+  document.getElementById('resultSubtitle').textContent = subtitleParts.join(' · ');
 
   // Associar nomes
   const shuffledNames = shuffle(names);
@@ -1057,6 +1112,18 @@ function renderResult(facResult, names, chosenMap, wasDrawn, clearingResult) {
     <div class="map-result-desc">${chosenMap.desc}</div>
   `;
   mapDiv.appendChild(mapCard);
+
+  if (chosenDeck) {
+    const deckCard = document.createElement('div');
+    deckCard.className = 'map-result-card';
+    deckCard.style.marginTop = '1rem';
+    deckCard.innerHTML = `
+      <div class="map-result-label">Deck Sorteado</div>
+      <div class="map-result-icon">🃏</div>
+      <div class="map-result-name">${chosenDeck}</div>
+    `;
+    mapDiv.appendChild(deckCard);
+  }
 
   // --- CLAREIRAS ---
   clearDiv.innerHTML = '';
@@ -1344,15 +1411,26 @@ function updateFacSelects() {
     const sel = document.getElementById('ligaFac_' + i);
     if (sel) chosen.push(sel.value);
   }
+  // Malandro 2 só disponível se Malandro 1 estiver escolhido por alguém
+  const vagabondChosen = chosen.includes('vagabond');
+
   for (let i = 0; i < ligaNumPlayers; i++) {
     const sel = document.getElementById('ligaFac_' + i);
     if (!sel) continue;
     const current = sel.value;
     const otherChosen = chosen.filter((v, idx) => idx !== i);
     Array.from(sel.options).forEach(opt => {
-      opt.disabled = otherChosen.includes(opt.value) && opt.value !== current;
+      const takenByOther = otherChosen.includes(opt.value) && opt.value !== current;
+      // vagabond2 só disponível se vagabond estiver escolhido (por outro jogador ou por este)
+      const v2blocked = opt.value === 'vagabond2' && !vagabondChosen && current !== 'vagabond2';
+      opt.disabled = takenByOther || v2blocked;
       opt.style.display = opt.disabled ? 'none' : '';
     });
+    // Se o jogador atual tinha vagabond2 e vagabond foi removido, resetar
+    if (current === 'vagabond2' && !vagabondChosen) {
+      sel.value = '';
+      onFacChange(i);
+    }
   }
 }
 
@@ -1442,7 +1520,9 @@ function gerarResultadoLiga() {
     dataStr = parts[2] + '/' + parts[1];
   }
 
-  const header = local + ' ' + dataStr;
+  const mapa = document.getElementById('ligaMapa').value;
+  let header = local + ' ' + dataStr;
+  if (mapa) header += ' | Mapa ' + mapa;
 
   for (let i = 0; i < ligaNumPlayers; i++) {
     const name  = document.getElementById('ligaName_' + i).value.trim();
