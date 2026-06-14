@@ -366,7 +366,7 @@
     letter-spacing: 0.02em;
     line-height: 1.3;
   }
-  .liga-tab:first-child { border-right: 1px solid var(--border); }
+  .liga-tab:not(:last-child) { border-right: 1px solid var(--border); }
   .liga-tab.active { background: var(--gold); color: var(--bg); font-weight: bold; }
   .liga-tab:not(.active):hover { background: var(--surface2); color: var(--text2); }
 
@@ -541,9 +541,10 @@
 
 <main class="main">
 
-  <div class="liga-tabs">
-    <button class="liga-tab active" onclick="switchTab('sorteio',this)">⚔ Sorteio de Facções</button>
-    <button class="liga-tab" onclick="switchTab('liga',this)">🏆 Gerar Resultado para a Liga</button>
+  <div class="liga-tabs" style="flex-wrap:wrap;">
+    <button class="liga-tab active" onclick="switchTab('sorteio',this)" style="flex:1;min-width:120px;">⚔ Sorteio de Facções</button>
+    <button class="liga-tab" onclick="switchTab('mapa',this)" style="flex:1;min-width:120px;">🗺️ Sortear apenas Mapas e/ou Clareiras</button>
+    <button class="liga-tab" onclick="switchTab('liga',this)" style="flex:1;min-width:120px;">🏆 Gerar Resultado para a Liga</button>
   </div>
 
   <!-- ===== ABA SORTEIO ===== -->
@@ -642,6 +643,51 @@
 
 </div><!-- /tab-sorteio -->
 
+  <!-- ===== ABA MAPA & CLAREIRAS ===== -->
+  <div class="liga-section" id="tab-mapa">
+
+    <div class="section">
+      <div class="section-title">Mapa</div>
+      <div class="maps-grid" id="mapaOnlyGrid"></div>
+      <div id="mapaOnlySortNote" style="margin-top:0.75rem;font-size:0.8rem;font-family:sans-serif;color:var(--text3);display:none;">
+        ✦ Mais de um mapa selecionado — o mapa será sorteado automaticamente.
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Clareiras</div>
+      <label class="clearing-toggle-row" id="mapaOnlyClearingRow">
+        <input type="checkbox" id="mapaOnlyClearingToggle" onchange="toggleMapaOnlyClearing(this.checked)">
+        <div>
+          <div class="clearing-toggle-label">Sortear naipes das clareiras</div>
+          <div class="clearing-toggle-sub">Distribui aleatoriamente Raposa, Rato e Coelho pelas clareiras</div>
+        </div>
+      </label>
+      <div id="mapaOnlyClearingOptions" style="display:none;">
+        <label class="clearing-toggle-row" style="margin-top:0">
+          <input type="checkbox" id="mapaOnlyCornerToggle" checked style="accent-color:var(--gold)">
+          <div>
+            <div class="clearing-toggle-label" style="font-size:0.88rem">Manter clareiras de canto como estão no mapa padrão</div>
+            <div class="clearing-toggle-sub">Se desmarcado, todos os naipes são redistribuídos livremente</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <button class="btn-sortear" onclick="sortearMapaOnly()">🗺️ Sortear</button>
+
+    <div class="result-section" id="resultMapaOnly" style="display:none;margin-top:1.5rem;">
+      <div class="result-header">
+        <h2>Resultado</h2>
+        <p id="resultMapaOnlySubtitle"></p>
+      </div>
+      <div id="resultMapaOnlyMap"></div>
+      <div id="resultMapaOnlyClearing"></div>
+      <button class="btn-resetar" onclick="sortearMapaOnly()">↺ Sortear novamente</button>
+    </div>
+
+  </div><!-- /tab-mapa -->
+
   <!-- ===== ABA LIGA ===== -->
   <div class="liga-section" id="tab-liga">
 
@@ -672,7 +718,10 @@
     <div class="liga-result-box" id="ligaResultBox">
       <div class="liga-result-header">
         <span>Resultado gerado</span>
+        <div style="display:flex;gap:8px;align-items:center;">
         <button class="btn-copiar" id="btnCopiar" onclick="copiarResultado()">📋 Copiar</button>
+        <button class="btn-copiar" id="btnWhatsApp" onclick="compartilharWhatsApp()" style="background:#25D366;color:white;">📲 WhatsApp</button>
+      </div>
       </div>
       <div class="liga-result-text" id="ligaResultText"></div>
     </div>
@@ -1343,6 +1392,101 @@ function switchTab(tab, btn) {
   document.getElementById('tab-' + tab).classList.add('active');
   btn.classList.add('active');
   if (tab === 'liga') initLiga();
+  if (tab === 'mapa') initMapaOnly();
+}
+
+// ── Mapa Only state ──
+let mapaOnlySelected = new Set(['autumn']);
+let mapaOnlyClearing = false;
+
+function initMapaOnly() {
+  renderMapaOnlyGrid();
+}
+
+function renderMapaOnlyGrid() {
+  const grid = document.getElementById('mapaOnlyGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  MAPS.forEach(map => {
+    const card = document.createElement('label');
+    card.className = 'map-card' + (mapaOnlySelected.has(map.id) ? ' selected' : '');
+    card.innerHTML = `
+      <input type="checkbox" ${mapaOnlySelected.has(map.id)?'checked':''} style="accent-color:var(--gold)">
+      <div class="map-icon">${map.icon}</div>
+      <div class="map-name">${map.name}</div>
+      <div class="map-desc">${map.desc}</div>`;
+    const cb = card.querySelector('input');
+    cb.onchange = () => {
+      if (cb.checked) mapaOnlySelected.add(map.id);
+      else if (mapaOnlySelected.size > 1) mapaOnlySelected.delete(map.id);
+      else { cb.checked = true; return; }
+      card.classList.toggle('selected', mapaOnlySelected.has(map.id));
+      document.getElementById('mapaOnlySortNote').style.display = mapaOnlySelected.size > 1 ? 'block' : 'none';
+    };
+    grid.appendChild(card);
+  });
+}
+
+function toggleMapaOnlyClearing(checked) {
+  mapaOnlyClearing = checked;
+  document.getElementById('mapaOnlyClearingRow').classList.toggle('active', checked);
+  document.getElementById('mapaOnlyClearingOptions').style.display = checked ? 'block' : 'none';
+}
+
+function sortearMapaOnly() {
+  const mapArr = MAPS.filter(m => mapaOnlySelected.has(m.id));
+  const chosenMap = mapArr.length === 1 ? mapArr[0] : mapArr[Math.floor(Math.random()*mapArr.length)];
+  const wasDrawn = mapArr.length > 1;
+
+  let clearingResult = null;
+  if (mapaOnlyClearing) {
+    const keepCorners = document.getElementById('mapaOnlyCornerToggle').checked;
+    clearingResult = drawClearings(chosenMap, keepCorners);
+  }
+
+  // Render
+  document.getElementById('resultMapaOnlySubtitle').textContent =
+    (wasDrawn ? 'Mapa sorteado: ' : 'Mapa: ') + chosenMap.name;
+
+  // Map card
+  const mapDiv = document.getElementById('resultMapaOnlyMap');
+  mapDiv.innerHTML = '';
+  const mapCard = document.createElement('div');
+  mapCard.className = 'map-result-card';
+  mapCard.innerHTML = `
+    <div class="map-result-label">${wasDrawn ? 'Mapa Sorteado' : 'Mapa'}</div>
+    <div class="map-result-icon">${chosenMap.icon}</div>
+    <div class="map-result-name">${chosenMap.name}</div>
+    <div class="map-result-desc">${chosenMap.desc}</div>`;
+  mapDiv.appendChild(mapCard);
+
+  // Clearings board
+  const clearDiv = document.getElementById('resultMapaOnlyClearing');
+  clearDiv.innerHTML = '';
+  if (clearingResult) {
+    const boardWrap = document.createElement('div');
+    boardWrap.className = 'board-wrapper';
+    boardWrap.innerHTML = `
+      <div class="board-title">Naipes das Clareiras — ${chosenMap.name}</div>
+      <div id="boardSvgWrapOnly" style="position:relative;width:100%;"></div>
+      <div class="clearing-legend">
+        <div class="legend-item"><div class="legend-dot legend-fox"></div> 🦊 Raposa (vermelho)</div>
+        <div class="legend-item"><div class="legend-dot legend-mouse"></div> 🐭 Rato (laranja)</div>
+        <div class="legend-item"><div class="legend-dot legend-rabbit"></div> 🐇 Coelho (amarelo)</div>
+      </div>`;
+    clearDiv.appendChild(boardWrap);
+    renderBoardSVG('boardSvgWrapOnly', clearingResult, chosenMap);
+  }
+
+  document.getElementById('resultMapaOnly').style.display = 'block';
+  document.getElementById('resultMapaOnly').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── WhatsApp share ──
+function compartilharWhatsApp() {
+  const text = document.getElementById('ligaResultText').textContent;
+  const url = 'https://wa.me/?text=' + encodeURIComponent(text);
+  window.open(url, '_blank');
 }
 
 let ligaNumPlayers = 4;
