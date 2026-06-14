@@ -439,7 +439,8 @@
     color: var(--text2);
     cursor: pointer;
   }
-  .liga-check input { accent-color: var(--gold); }
+  .liga-check input { accent-color: var(--gold); cursor:pointer; }
+  .liga-check span { cursor:pointer; }
 
   .liga-vagabond-sub {
     margin-top: 8px;
@@ -598,10 +599,10 @@
 
     <!-- Garantir insurgente (só aparece com 3 jogadores) -->
     <label class="clearing-toggle-row" id="insurgentToggleRow" style="display:none;">
-      <input type="checkbox" id="insurgentToggle" onchange="garantirInsurgente=this.checked">
+      <div id="insurgentToggleInner"></div>
       <div>
-        <div class="clearing-toggle-label">Garantir ao menos 1 insurgente</div>
-        <div class="clearing-toggle-sub">Com 3 jogadores, força ao menos uma facção insurgente no grupo</div>
+        <div class="clearing-toggle-label" id="insurgentToggleLabel">Garantir insurgentes</div>
+        <div class="clearing-toggle-sub" id="insurgentToggleSub"></div>
       </div>
     </label>
 
@@ -818,7 +819,7 @@ let selectedMaps = new Set(['autumn']);
 let sortearClareiras = false;
 let manterCantos = true;
 let sortearDeck = false;
-let garantirInsurgente = false;
+let minInsurgentes = 0; // 0=livre, 1=ao menos 1, 2=ao menos 2
 
 // ===================== INIT =====================
 function init() {
@@ -833,13 +834,40 @@ function init() {
 function renderCountBtns() {
   document.querySelectorAll('.count-btn').forEach(btn => {
     btn.classList.toggle('active', parseInt(btn.dataset.n) === numPlayers);
-    btn.onclick = () => { numPlayers = parseInt(btn.dataset.n); renderCountBtns(); renderPlayersGrid(); updateReachInfo(); updateInsurgentToggle(); };
+    btn.onclick = () => { numPlayers = parseInt(btn.dataset.n); minInsurgentes = 0; renderCountBtns(); renderPlayersGrid(); updateReachInfo(); updateInsurgentToggle(); };
   });
 }
 
 function updateInsurgentToggle() {
   const row = document.getElementById('insurgentToggleRow');
-  if (row) row.style.display = numPlayers === 3 ? 'flex' : 'none';
+  const inner = document.getElementById('insurgentToggleInner');
+  if (!row || !inner) return;
+
+  // Max insurgentes possíveis = numPlayers - 1 (precisa ao menos 1 militante), máximo 3
+  const maxOpts = Math.min(numPlayers - 1, 3);
+
+  if (numPlayers >= 3) {
+    row.style.display = 'flex';
+    document.getElementById('insurgentToggleSub').textContent =
+      'Controle a quantidade mínima de facções insurgentes no grupo';
+
+    let html = `<label class="liga-check" style="margin-bottom:4px">
+        <input type="radio" name="insOpt" value="0" checked onchange="minInsurgentes=0" style="accent-color:var(--gold)">
+        <span>Livre</span>
+      </label>`;
+
+    const labels = ['Ao menos 1 insurgente','Ao menos 2 insurgentes','Ao menos 3 insurgentes'];
+    for (let i = 1; i <= maxOpts; i++) {
+      html += `<label class="liga-check" style="margin-bottom:4px">
+        <input type="radio" name="insOpt" value="${i}" onchange="minInsurgentes=${i}" style="accent-color:var(--gold)">
+        <span>${labels[i-1]}</span>
+      </label>`;
+    }
+    inner.innerHTML = html;
+  } else {
+    row.style.display = 'none';
+    minInsurgentes = 0;
+  }
 }
 
 function renderPlayersGrid() {
@@ -1029,7 +1057,8 @@ function drawFactions(avail, n, minReach) {
     const hasMilitant = candidate.some(f => f.type==='militant');
     const hasInsurgent = candidate.some(f => f.type==='insurgent');
     if (!hasMilitant && n >= 2) continue;
-    if (garantirInsurgente && n === 3 && !hasInsurgent) continue;
+    const insCount = candidate.filter(f => f.type==='insurgent').length;
+    if (minInsurgentes > 0 && insCount < minInsurgentes) continue;
     // Malandro 2 só pode entrar se o Malandro 1 também estiver no grupo
     const hasV2 = candidate.some(f => f.id === 'vagabond2');
     const hasV1 = candidate.some(f => f.id === 'vagabond');
