@@ -11,7 +11,7 @@ Ferramenta web para o jogo de tabuleiro **Root** (Leder Games), criada para a **
 | Aba | O que faz |
 |---|---|
 | ⚔ Sorteio de Facções | Sorteia facções seguindo as regras oficiais de Alcance da Leder Games |
-| 🏆 Resultado para Liga | Gera o texto formatado da partida, pronto para colar no WhatsApp |
+| 🏆 Gerar Resultado para Liga | Gera o texto formatado da partida, pronto para colar no WhatsApp |
 
 ---
 
