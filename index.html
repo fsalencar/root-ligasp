@@ -946,16 +946,22 @@ function renderExpansions() {
         <div class="exp-facs">${exp.desc}</div>
         ${exp.hasV2 ? `<div id="v2wrap_${exp.id}"></div>` : ''}
       </div>`;
-    if (exp.id !== 'base') {
-      const cb = row.querySelector('input');
-      cb.onchange = () => {
-        if (cb.checked) selectedExpansions.add(exp.id);
-        else { selectedExpansions.delete(exp.id); if (exp.id==='riverfolk') allowV2=false; }
-        row.classList.toggle('selected', cb.checked);
-        if (exp.hasV2) renderV2Option(exp.id, cb.checked);
-        updateReachInfo();
-      };
-    }
+    const cb = row.querySelector('input');
+    cb.onchange = () => {
+      if (cb.checked) {
+        selectedExpansions.add(exp.id);
+      } else {
+        if (selectedExpansions.size <= 1) {
+          cb.checked = true; // mínimo 1 expansão
+          return;
+        }
+        selectedExpansions.delete(exp.id);
+        if (exp.id === 'riverfolk') allowV2 = false;
+      }
+      row.classList.toggle('selected', selectedExpansions.has(exp.id));
+      if (exp.hasV2) renderV2Option(exp.id, selectedExpansions.has(exp.id));
+      updateReachInfo();
+    };
     grid.appendChild(row);
     if (exp.hasV2) renderV2Option(exp.id, selectedExpansions.has(exp.id));
   });
@@ -1065,14 +1071,72 @@ function sortear() {
   const avail = getAvailableFactions();
   const min = REACH_MIN[n];
 
+  // ── Validação detalhada ──────────────────────────────────────────────────
+  const erros = [];
+
+  // Sem expansões selecionadas
+  if (selectedExpansions.size === 0) {
+    erros.push('Nenhuma expansão selecionada. Marque ao menos uma expansão para continuar.');
+  }
+
+  // Facções insuficientes
   if (avail.length < n) {
-    showError(`Facções insuficientes! Há apenas ${avail.length} disponíveis para ${n} jogadores. Habilite mais expansões.`);
+    const faltam = n - avail.length;
+    erros.push(
+      `Facções insuficientes: há ${avail.length} facção(ões) disponível(is) para ${n} jogadores (faltam ${faltam}).`
+    );
+    // Sugerir o que habilitar
+    const sugestoes = [];
+    if (!selectedExpansions.has('base'))       sugestoes.push('Jogo Base (+4 facções)');
+    if (!selectedExpansions.has('underworld')) sugestoes.push('Submundo (+2 facções)');
+    if (!selectedExpansions.has('marauder'))   sugestoes.push('Saqueadores (+2 facções)');
+    if (!selectedExpansions.has('riverfolk'))  sugestoes.push('Ribeirinhos (+2 ou +3 facções)');
+    if (!selectedExpansions.has('homeland'))   sugestoes.push('Pátria (+3 facções)');
+    if (sugestoes.length > 0) {
+      erros.push('Sugestão — habilite: ' + sugestoes.join(', ') + '.');
+    }
+  }
+
+  // Alcance insuficiente mesmo com facções suficientes
+  if (erros.length === 0) {
+    const totalReachAvail = avail.reduce((s,f) => s + f.reach, 0);
+    // Máximo alcance possível com n facções (pegar as n de maior alcance)
+    const sorted = [...avail].sort((a,b) => b.reach - a.reach);
+    const maxReach = sorted.slice(0, n).reduce((s,f) => s + f.reach, 0);
+    if (maxReach < min) {
+      erros.push(
+        `Alcance insuficiente: o máximo possível com as facções disponíveis é ${maxReach}, mas o mínimo para ${n} jogadores é ${min}.`
+      );
+      erros.push('Habilite mais expansões ou reduza o número de jogadores.');
+    }
+  }
+
+  // Insurgente garantido mas não há insurgentes suficientes
+  if (erros.length === 0 && minInsurgentes > 0) {
+    const insAvail = avail.filter(f => f.type === 'insurgent').length;
+    if (insAvail < minInsurgentes) {
+      erros.push(
+        `Não há insurgentes suficientes: você pediu ao menos ${minInsurgentes} insurgente(s), mas só há ${insAvail} disponível(is).`
+      );
+    }
+    // Também precisa de ao menos 1 militante
+    const milAvail = avail.filter(f => f.type === 'militant').length;
+    if (n - minInsurgentes > milAvail) {
+      erros.push(
+        `Militantes insuficientes para completar o grupo com ${minInsurgentes} insurgente(s) — só há ${milAvail} militante(s) disponível(is).`
+      );
+    }
+  }
+
+  if (erros.length > 0) {
+    showError(erros.join('\n\n'));
     return;
   }
+  // ────────────────────────────────────────────────────────────────────────
 
   const facResult = drawFactions(avail, n, min);
   if (!facResult) {
-    showError(`Não foi possível montar um grupo com alcance mínimo ${min}. Habilite mais expansões ou reduza jogadores.`);
+    showError(`Não foi possível montar um grupo válido com as configurações atuais.\n\nTente habilitar mais expansões, reduzir o número de jogadores ou ajustar a opção de insurgentes.`);
     return;
   }
 
@@ -1096,8 +1160,9 @@ function sortear() {
 
 function showError(msg) {
   const el = document.getElementById('errorMsg');
-  el.textContent = msg;
+  el.innerHTML = msg.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
   el.style.display = 'block';
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function drawFactions(avail, n, minReach) {
