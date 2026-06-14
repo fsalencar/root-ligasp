@@ -11,7 +11,7 @@ Ferramenta web para o jogo de tabuleiro **Root** (Leder Games), criada para a **
 | Aba | O que faz |
 |---|---|
 | ⚔ Sorteio de Facções | Sorteia facções seguindo as regras oficiais de Alcance da Leder Games |
-| 🏆 Resultado para Liga | Gera o texto formatado da partida, pronto para colar no WhatsApp |
+| 🏆 Gerar Resultado para a Liga | Gera o texto formatado da partida, pronto para colar no WhatsApp |
 
 ---
 
@@ -83,7 +83,7 @@ O sorteio segue as regras oficiais de Alcance mínimo por número de jogadores:
 
 ---
 
-## 🏆 Como usar — Resultado para Liga
+## 🏆 Como usar — Gerar Resultado para a Liga
 
 ### 1. Informações da partida
 
@@ -105,7 +105,7 @@ Para cada jogador preencha:
 
 ### 3. Gerar resultado
 
-Clique em **📋 Gerar Resultado para Liga**.
+Clique em **📋 Gerar Gerar Resultado para a Liga**.
 
 O texto segue o formato oficial da liga:
 
