@@ -2,7 +2,7 @@
 
 Ferramenta web para o jogo de tabuleiro Root (Leder Games), criada para a Liga Root SP.
 
-Acesse em: fsalencar.github.io/root-ligasp
+Acesse em: [fsalencar.github.io/root-ligasp](https://fsalencar.github.io/root-ligasp)
 
 
 🗂 Funcionalidades
@@ -101,17 +101,23 @@ Clique em 📋 Gerar Resultado para Liga.
 
 O texto gerado segue o formato oficial da liga:
 
-Liv Toys 24/05
+Liv Toys 24/05\
+
 Vinicius Bárbaro (Iniciante) - Lagartos Cultistas Vitória por Domínio
+
 Felipe Alencar - Guardiões de Ferro 28
+
 Erick Oliveira (Iniciante) - Dinastia das Rapinas 24
+
 Alexandre Chazan (Iniciante) - Marqueses 7
 
 Ordenação automática:
 
 
 Maior pontuação primeiro
+
 Vitória por Domínio aparece no topo (sem pontuação)
+
 Derrota por Domínio sempre por último
 
 
@@ -122,13 +128,18 @@ Clique em 📋 Copiar para copiar o texto e colar direto no WhatsApp, Discord ou
 
 🎨 Legenda de cores (Clareiras)
 
-CorNaipe🔴 VermelhoRaposa🟠 LaranjaRato🟡 AmareloCoelho
+| Cor | Naipe |
+|---|---|
+| 🔴 Vermelho | Raposa |
+| 🟠 Laranja | Rato |
+| 🟡 Amarelo | Coelho |
 
 
 🛠 Tecnologia
 
 
 HTML + CSS + JavaScript puro (sem dependências externas)
+
 Um único arquivo index.html — basta abrir no navegador ou hospedar em qualquer servidor estático
 
 
