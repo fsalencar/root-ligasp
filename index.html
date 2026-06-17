@@ -344,6 +344,66 @@
   .faction-accent-knaves::before { background: #306030; }
 
 
+
+  /* ===== PRÉ-SELEÇÃO DE FACÇÃO ===== */
+  .player-fac-select {
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .player-fac-select select {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px 8px;
+    color: var(--text2);
+    font-family: sans-serif;
+    font-size: 0.78rem;
+    transition: border-color 0.2s;
+  }
+  .player-fac-select select:focus { outline: none; border-color: var(--gold-dark); }
+  .player-fac-select select.chosen { border-color: var(--gold-dark); color: var(--gold-light); background: rgba(200,160,80,0.07); }
+  .player-fac-select label {
+    font-size: 0.72rem;
+    color: var(--text3);
+    font-family: sans-serif;
+    white-space: nowrap;
+  }
+
+  .reach-warn-box {
+    background: rgba(200,120,0,0.12);
+    border: 1px solid rgba(200,120,0,0.35);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    font-size: 0.82rem;
+    font-family: sans-serif;
+    color: #f0b060;
+    margin-top: 1rem;
+    line-height: 1.5;
+    display: none;
+  }
+  .reach-warn-box strong { color: #f8c878; }
+
+  /* ===== CONTINUAR PARA LIGA ===== */
+  .btn-continuar {
+    width: 100%;
+    padding: 0.9rem;
+    background: transparent;
+    color: var(--gold);
+    border: 1px solid var(--gold-dark);
+    border-radius: var(--radius-lg);
+    font-size: 1rem;
+    font-family: Georgia, serif;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 0.75rem;
+    display: none;
+  }
+  .btn-continuar:hover { background: rgba(200,160,80,0.1); }
+
   /* ===== LIGA ===== */
   .liga-tabs {
     display: flex;
@@ -574,6 +634,7 @@
     <div class="section-title">Componentes disponíveis</div>
     <div class="expansions-grid" id="expansionsGrid"></div>
     <div class="reach-info" id="reachInfo"></div>
+    <div class="reach-warn-box" id="reachWarnBox"></div>
   </div>
 
   <!-- Mapas -->
@@ -639,6 +700,7 @@
     <div id="resultCards"></div>
     <div class="summary-box" id="summaryBox"></div>
     <button class="btn-resetar" onclick="resetar()">↺ Novo sorteio com mesmas configurações</button>
+    <button class="btn-continuar" id="btnContinuarLiga" onclick="continuarParaLiga()">🏆 Continuar para Gerar Resultado para a Liga</button>
   </div>
 
 </div><!-- /tab-sorteio -->
@@ -921,14 +983,106 @@ function updateInsurgentToggle() {
 
 function renderPlayersGrid() {
   const grid = document.getElementById('playersGrid');
-  const existing = [];
-  grid.querySelectorAll('input').forEach(i => existing.push(i.value));
+  const existingNames = [];
+  const existingFacs = [];
+  grid.querySelectorAll('input[type=text]').forEach(i => existingNames.push(i.value));
+  grid.querySelectorAll('select.player-fac-sel').forEach(s => existingFacs.push(s.value));
   grid.innerHTML = '';
   for (let i = 0; i < numPlayers; i++) {
     const d = document.createElement('div');
     d.className = 'player-field';
-    d.innerHTML = `<label>Jogador ${i+1}</label><input type="text" placeholder="Nome do jogador ${i+1}" value="${existing[i]||''}">`;
+    d.innerHTML = `
+      <label>Jogador ${i+1}</label>
+      <input type="text" placeholder="Nome do jogador ${i+1}" value="${existingNames[i]||''}">
+      <div class="player-fac-select">
+        <label>Facção:</label>
+        <select class="player-fac-sel" id="playerFac_${i}" onchange="onPlayerFacChange()">
+          <option value="">— livre —</option>
+        </select>
+      </div>`;
     grid.appendChild(d);
+  }
+  updatePlayerFacOptions();
+}
+
+function updatePlayerFacOptions() {
+  // Get all chosen factions
+  const chosen = [];
+  for (let i = 0; i < numPlayers; i++) {
+    const sel = document.getElementById('playerFac_' + i);
+    if (sel && sel.value) chosen.push({ idx: i, val: sel.value });
+  }
+
+  for (let i = 0; i < numPlayers; i++) {
+    const sel = document.getElementById('playerFac_' + i);
+    if (!sel) continue;
+    const current = sel.value;
+    const avail = getAvailableFactions();
+    const otherChosen = chosen.filter(c => c.idx !== i).map(c => c.val);
+
+    sel.innerHTML = '<option value="">— livre —</option>';
+    avail.forEach(f => {
+      if (otherChosen.includes(f.id)) return; // já escolhida por outro
+      const opt = document.createElement('option');
+      opt.value = f.id;
+      opt.textContent = f.name;
+      if (f.id === current) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.className = 'player-fac-sel' + (sel.value ? ' chosen' : '');
+  }
+  checkPreselectionReach();
+}
+
+function onPlayerFacChange() {
+  updatePlayerFacOptions();
+}
+
+function getPreselectedFactions() {
+  const pre = [];
+  for (let i = 0; i < numPlayers; i++) {
+    const sel = document.getElementById('playerFac_' + i);
+    if (sel && sel.value) pre.push(sel.value);
+  }
+  return pre;
+}
+
+function checkPreselectionReach() {
+  const warnBox = document.getElementById('reachWarnBox');
+  if (!warnBox) return;
+  const pre = getPreselectedFactions();
+  if (pre.length === 0) { warnBox.style.display = 'none'; return; }
+
+  const min = REACH_MIN[numPlayers];
+  const avail = getAvailableFactions();
+  const preReach = pre.reduce((s, id) => {
+    const f = avail.find(f => f.id === id);
+    return s + (f ? f.reach : 0);
+  }, 0);
+
+  // Max possible reach: pre-selected + best available for remaining slots
+  const remaining = numPlayers - pre.length;
+  const freeAvail = avail.filter(f => !pre.includes(f.id))
+    .sort((a,b) => b.reach - a.reach)
+    .slice(0, remaining);
+  const maxPossible = preReach + freeAvail.reduce((s,f) => s + f.reach, 0);
+
+  if (maxPossible < min) {
+    warnBox.style.display = 'block';
+    warnBox.innerHTML = `<strong>⚠️ Atenção — Regra de Alcance</strong><br>
+      Com as facções pré-selecionadas, o alcance máximo possível é <strong>${maxPossible}</strong>,
+      abaixo do mínimo de <strong>${min}</strong> para ${numPlayers} jogadores.<br><br>
+      Pelas regras oficiais da Leder Games, esse grupo pode gerar desequilíbrio,
+      oferecendo <strong>muita vantagem ou desvantagem</strong> para algum jogador.
+      Considere alterar as escolhas.`;
+  } else if (preReach > 0 && preReach < min && remaining === 0) {
+    warnBox.style.display = 'block';
+    warnBox.innerHTML = `<strong>⚠️ Atenção — Regra de Alcance</strong><br>
+      O alcance total das facções escolhidas é <strong>${preReach}</strong>,
+      abaixo do mínimo de <strong>${min}</strong> para ${numPlayers} jogadores.<br><br>
+      Pelas regras oficiais da Leder Games, esse grupo pode gerar desequilíbrio significativo.`;
+  } else {
+    warnBox.style.display = 'none';
   }
 }
 
@@ -1034,6 +1188,7 @@ function getAvailableFactions() {
 }
 
 function updateReachInfo() {
+  updatePlayerFacOptions();
   const facs = getAvailableFactions();
   const mil = facs.filter(f => f.type==='militant').length;
   const ins = facs.filter(f => f.type==='insurgent').length;
@@ -1134,7 +1289,8 @@ function sortear() {
   }
   // ────────────────────────────────────────────────────────────────────────
 
-  const facResult = drawFactions(avail, n, min);
+  const preSelected = getPreselectedFactions();
+  const facResult = drawFactions(avail, n, min, preSelected);
   if (!facResult) {
     showError(`Não foi possível montar um grupo válido com as configurações atuais.\n\nTente habilitar mais expansões, reduzir o número de jogadores ou ajustar a opção de insurgentes.`);
     return;
@@ -1228,7 +1384,14 @@ function drawClearings(map, keepCorners) {
 }
 
 // ===================== RENDER RESULTADO =====================
+let _lastFacResult = null;
+let _lastNames = null;
+let _lastMap = null;
+
 function renderResult(facResult, names, chosenMap, wasDrawn, clearingResult, chosenDeck) {
+  _lastFacResult = facResult;
+  _lastNames = names;
+  _lastMap = chosenMap;
   const section = document.getElementById('resultSection');
   const cards = document.getElementById('resultCards');
   const summary = document.getElementById('summaryBox');
@@ -1360,6 +1523,8 @@ function renderResult(facResult, names, chosenMap, wasDrawn, clearingResult, cho
 
   section.style.display = 'block';
   section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const btnC = document.getElementById('btnContinuarLiga');
+  if (btnC) btnC.style.display = 'block';
 }
 
 // ===================== SVG DO TABULEIRO =====================
@@ -1425,6 +1590,72 @@ function renderBoardSVG(wrapperId, suits, map) {
 
   wrap.appendChild(svg);
 }
+
+function continuarParaLiga() {
+  if (!_lastFacResult || !_lastNames) return;
+
+  // Switch to liga tab
+  const ligaBtn = document.querySelector('.liga-tab:last-child');
+  switchTab('liga', ligaBtn);
+
+  // Wait for DOM to render
+  setTimeout(() => {
+    // Set number of players
+    ligaNumPlayers = _lastNames.length;
+    renderLigaPlayers();
+
+    // Set today's date
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth()+1).padStart(2,'0');
+    const dd = String(today.getDate()).padStart(2,'0');
+    const dateEl = document.getElementById('ligaData');
+    if (dateEl && !dateEl.value) dateEl.value = yyyy+'-'+mm+'-'+dd;
+
+    // Set map
+    if (_lastMap) {
+      const mapSel = document.getElementById('ligaMapa');
+      if (mapSel) {
+        Array.from(mapSel.options).forEach(opt => {
+          if (opt.textContent.includes(_lastMap.name)) mapSel.value = opt.value;
+        });
+      }
+    }
+
+    // Map player names and factions from turnOrder
+    // turnOrder = order of play; match names to factions
+    const shuffledNames = [..._lastNames];
+    // We need to re-derive: in renderResult, names were shuffled to assign factions
+    // Use _lastFacResult.turnOrder factions, assigned to shuffled names
+    // Re-shuffle with same logic isn't possible, so we'll assign in setup order
+    const setupOrder = _lastFacResult.setupOrder;
+
+    setupOrder.forEach((fac, i) => {
+      // Find which player got this faction from turnOrder
+      const turnIdx = _lastFacResult.turnOrder.findIndex(f => f.id === fac.id);
+      const playerName = shuffledNames[turnIdx] || _lastNames[i] || '';
+
+      const nameEl = document.getElementById('ligaName_' + i);
+      const facEl  = document.getElementById('ligaFac_' + i);
+
+      if (nameEl) nameEl.value = playerName;
+      if (facEl) {
+        // Find matching option
+        const facId = fac.id === 'vagabond2' ? 'vagabond2' : fac.id;
+        Array.from(facEl.options).forEach(opt => { if (opt.value === facId) opt.selected = true; });
+        onFacChange(i);
+        updateFacSelects();
+        // Set vagabond type if applicable
+        if (fac.id === 'vagabond' || fac.id === 'vagabond2') {
+          updateVagSelects();
+        }
+      }
+    });
+
+    document.getElementById('tab-liga').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 150);
+}
+
 function resetar() { sortear(); }
 
 init();
@@ -1630,7 +1861,7 @@ function renderLigaPlayers() {
         </div>
         <div class="liga-field" style="justify-content:flex-end;padding-top:18px">
           <div class="liga-checks">
-            ${!isFirst ? `<label class="liga-check"><input type="checkbox" id="ligaIniciante_${i}"> Iniciante</label>` : ''}
+            <label class="liga-check"><input type="checkbox" id="ligaIniciante_${i}"> Iniciante</label>
             <label class="liga-check"><input type="checkbox" id="ligaVitDom_${i}" onchange="onVitDomChange(${i}, this)"> Vitória por domínio</label>
             <label class="liga-check"><input type="checkbox" id="ligaDerDom_${i}" onchange="onDerDomChange(${i}, this)"> Derrota por domínio</label>
           </div>
@@ -1767,7 +1998,7 @@ function gerarResultadoLiga() {
     const facId = document.getElementById('ligaFac_' + i).value;
     const scoreEl = document.getElementById('ligaScore_' + i);
     const score = scoreEl ? parseInt(scoreEl.value) || 0 : 0;
-    const iniciante = i > 0 && document.getElementById('ligaIniciante_' + i)?.checked;
+    const iniciante = document.getElementById('ligaIniciante_' + i)?.checked || false;
     const vitDom = document.getElementById('ligaVitDom_' + i)?.checked;
     const derDom = document.getElementById('ligaDerDom_' + i)?.checked;
 
