@@ -31,6 +31,7 @@ function switchTab(tab, btn) {
   localStorage.setItem('ligaActiveTab', tab);
   if (tab === 'liga') initLiga();
   if (tab === 'mapa') initMapaOnly();
+  if (tab !== 'partida' && typeof stopTimer === 'function') stopTimer();
   if (tab === 'partida' && typeof renderPartida === 'function') renderPartida();
   if (tab === 'historico' && typeof carregarHistorico === 'function') carregarHistorico();
 }

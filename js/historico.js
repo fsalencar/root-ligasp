@@ -62,6 +62,7 @@ function renderHistoricoMensagem(section, icon, msg) {
 }
 
 function renderHistoricoData(section, data) {
+  _historicoData = data;
   if (!data.length) {
     section.innerHTML = `
       <div class="section" style="text-align:center;padding:3rem 2rem;">
@@ -80,6 +81,43 @@ function renderHistoricoData(section, data) {
       ${data.map(entry => renderHistoricoCard(entry)).join('')}
     </div>`;
 }
+
+function formatarResultadoHistorico(d) {
+  const jogadores = d.jogadores || [];
+  let dataStr = '';
+  if (d.data) {
+    const parts = d.data.split('-');
+    if (parts.length === 3) dataStr = `${parts[2]}/${parts[1]}`;
+  }
+
+  let header = d.local || '';
+  if (dataStr) header += (header ? ' ' : '') + dataStr;
+  if (d.mapa) header += (header ? ' | Mapa ' : 'Mapa ') + d.mapa;
+
+  const lines = [header];
+  jogadores.forEach(j => {
+    let line = j.nome;
+    if (j.iniciante) line += ' (Iniciante)';
+    line += ' - ' + j.faccao;
+    if (j.pontuacao == null) {
+      line += j.vencedor ? ' Vitória por Domínio' : ' Derrota por Domínio';
+    } else {
+      line += ' ' + j.pontuacao;
+    }
+    lines.push(line);
+  });
+
+  return lines.join('\n');
+}
+
+function compartilharHistoricoWhatsApp(id) {
+  const entry = _historicoData?.find(e => e.id === id);
+  if (!entry) return;
+  const text = formatarResultadoHistorico(entry.dados || {});
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+}
+
+let _historicoData = [];
 
 function renderHistoricoCard(entry) {
   const d = entry.dados || {};
@@ -106,6 +144,11 @@ function renderHistoricoCard(entry) {
             ${j.nome}${j.faccao ? ' · ' + j.faccao : ''}${j.pontuacao != null ? ' · ' + j.pontuacao + 'pts' : ''}
           </span>
         `).join('')}
+      </div>
+      <div style="margin-top:10px;">
+        <button class="btn-copiar" onclick="compartilharHistoricoWhatsApp('${entry.id}')" style="background:#25D366;color:white;font-size:0.75rem;">
+          📲 WhatsApp
+        </button>
       </div>
     </div>`;
 }

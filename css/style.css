@@ -570,6 +570,20 @@
     margin-top: 0.2rem;
   }
 
+  /* ===== PARTIDA EM ANDAMENTO ===== */
+  .partida-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.25rem;
+    flex-wrap: wrap;
+  }
+  .partida-timer-box {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
   /* ===== TAB BADGE (partida em andamento) ===== */
   .tab-badge {
     display: inline-block;
