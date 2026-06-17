@@ -386,6 +386,259 @@
     border-radius: var(--radius); padding: 1rem; margin-top: 0.5rem;
   }
 
+  /* ===== HEADER AUTH ===== */
+  #authBtn {
+    margin-left: auto;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--gold);
+    font-family: sans-serif;
+    font-size: 0.82rem;
+    padding: 0.45rem 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  #authBtn:hover { background: rgba(200,160,80,0.1); border-color: var(--gold); }
+  #authBtn:disabled { opacity: 0.6; cursor: default; }
+
+  #userInfo {
+    margin-left: auto;
+    display: none;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ===== AUTH MODAL ===== */
+  .auth-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  .auth-box {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 2rem 1.75rem 1.5rem;
+    width: 100%;
+    max-width: 360px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+
+  .auth-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: transparent;
+    border: none;
+    color: var(--text3);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: var(--radius);
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .auth-close:hover { color: var(--text); }
+
+  .auth-logo {
+    font-size: 2rem;
+    color: var(--gold);
+    text-align: center;
+    line-height: 1;
+    margin-bottom: 0.1rem;
+  }
+
+  .auth-title {
+    font-size: 1.25rem;
+    color: var(--gold-light);
+    text-align: center;
+    letter-spacing: 0.05em;
+    font-weight: normal;
+  }
+
+  .auth-subtitle {
+    font-size: 0.8rem;
+    color: var(--text3);
+    font-family: sans-serif;
+    text-align: center;
+    line-height: 1.4;
+    margin-bottom: 0.3rem;
+  }
+
+  .auth-btn-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 0.72rem 1rem;
+    background: #ffffff;
+    color: #3c4043;
+    border: 1px solid #dadce0;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-family: 'Roboto', Arial, sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: box-shadow 0.15s, background 0.15s;
+    width: 100%;
+    letter-spacing: 0.01em;
+  }
+  .auth-btn-google:hover {
+    background: #f8f9fa;
+    box-shadow: 0 1px 4px rgba(60,64,67,0.3);
+  }
+  .auth-btn-google:active {
+    background: #f1f3f4;
+  }
+
+  .auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: var(--text3);
+    font-family: sans-serif;
+    margin: 0.1rem 0;
+  }
+  .auth-divider::before,
+  .auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .auth-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.6rem 0.75rem;
+    color: var(--text);
+    font-family: sans-serif;
+    font-size: 0.88rem;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .auth-input:focus { outline: none; border-color: var(--gold-dark); }
+  .auth-input::placeholder { color: var(--text3); }
+
+  .auth-btn-email {
+    width: 100%;
+    padding: 0.65rem;
+    background: var(--gold);
+    color: var(--bg);
+    border: none;
+    border-radius: var(--radius);
+    font-size: 0.88rem;
+    font-family: sans-serif;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .auth-btn-email:hover { background: var(--gold-light); }
+
+  .auth-msg {
+    font-family: sans-serif;
+    font-size: 0.8rem;
+    text-align: center;
+    min-height: 1rem;
+    line-height: 1.4;
+    display: none;
+  }
+
+  .auth-footer {
+    font-family: sans-serif;
+    font-size: 0.72rem;
+    color: var(--text3);
+    text-align: center;
+    line-height: 1.5;
+    margin-top: 0.2rem;
+  }
+
+  /* ===== TAB BADGE (partida em andamento) ===== */
+  .tab-badge {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #80d060;
+    margin-left: 5px;
+    vertical-align: middle;
+    flex-shrink: 0;
+  }
+
+  /* ===== HISTÓRICO ===== */
+  .hist-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.85rem 1rem;
+    margin-bottom: 10px;
+  }
+  .hist-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .hist-local {
+    font-size: 0.92rem;
+    color: var(--text);
+  }
+  .hist-data {
+    font-size: 0.75rem;
+    color: var(--text3);
+    font-family: sans-serif;
+  }
+  .hist-mapa {
+    font-size: 0.75rem;
+    color: var(--text3);
+    font-family: sans-serif;
+    margin-bottom: 6px;
+  }
+  .hist-vencedor {
+    font-size: 0.85rem;
+    color: var(--gold);
+    font-family: sans-serif;
+    margin-bottom: 6px;
+  }
+  .hist-jogadores {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 4px;
+  }
+  .hist-jogador {
+    font-size: 0.72rem;
+    color: var(--text2);
+    font-family: sans-serif;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px 9px;
+    white-space: nowrap;
+  }
+  .hist-vencedor-tag {
+    color: var(--gold-light);
+    border-color: var(--gold-dark);
+    background: rgba(200,160,80,0.08);
+  }
+
   @media (max-width: 700px) {
     .header { padding: 1rem; }
     .header h1 { font-size: 1.2rem; }

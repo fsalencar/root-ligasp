@@ -24,10 +24,22 @@ const VAGABOND_TYPES = [
 function switchTab(tab, btn) {
   document.querySelectorAll('.liga-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.liga-tab').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + tab).classList.add('active');
+  const section = document.getElementById('tab-' + tab);
+  if (!section) return;
+  section.classList.add('active');
   btn.classList.add('active');
+  localStorage.setItem('ligaActiveTab', tab);
   if (tab === 'liga') initLiga();
   if (tab === 'mapa') initMapaOnly();
+  if (tab === 'partida' && typeof renderPartida === 'function') renderPartida();
+  if (tab === 'historico' && typeof carregarHistorico === 'function') carregarHistorico();
+}
+
+function restoreTabFromHash() {
+  const saved = localStorage.getItem('ligaActiveTab');
+  if (!saved || saved === 'sorteio') return;
+  const btn = document.querySelector(`.liga-tab[data-tab="${saved}"]`);
+  if (btn) switchTab(saved, btn);
 }
 
 // ── Mapa Only state ──

@@ -23,10 +23,7 @@ async function initSupabase() {
     renderAuthUI();
     if (event === 'SIGNED_IN') {
       hideAuthModal();
-      // Restore correct tab after OAuth redirect
-      if (window.location.hash && window.location.hash !== '#') {
-        if (typeof restoreTabFromHash === 'function') restoreTabFromHash();
-      }
+      if (typeof restoreTabFromHash === 'function') restoreTabFromHash();
       if (typeof carregarHistorico === 'function') carregarHistorico();
     }
     if (event === 'SIGNED_OUT') {
@@ -80,6 +77,18 @@ async function logout() {
   const sb = await initSupabase();
   await sb.auth.signOut();
 }
+
+// Detecta retorno de redirect OAuth e exibe loading state
+(function () {
+  if (new URLSearchParams(window.location.search).has('code')) {
+    const btn = document.getElementById('authBtn');
+    if (btn) {
+      btn.textContent = '⏳ Conectando...';
+      btn.disabled = true;
+      btn.style.opacity = '0.7';
+    }
+  }
+})();
 
 // ── UI de autenticação ───────────────────────────────────────────
 function renderAuthUI() {
