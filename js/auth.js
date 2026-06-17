@@ -10,24 +10,40 @@ async function initSupabase() {
   if (supabaseClient) return supabaseClient;
   const module = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
   const createClient = module.createClient;
-  supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: true,
+      detectSessionInUrl: true,  // handles OAuth callback automatically
+    }
+  });
 
   // Listener de mudança de sessão
   supabaseClient.auth.onAuthStateChange((event, session) => {
     currentUser = session?.user || null;
     renderAuthUI();
     if (event === 'SIGNED_IN') {
-      carregarHistorico();
+      hideAuthModal();
+      // Restore correct tab after OAuth redirect
+      if (window.location.hash && window.location.hash !== '#') {
+        if (typeof restoreTabFromHash === 'function') restoreTabFromHash();
+      }
+      if (typeof carregarHistorico === 'function') carregarHistorico();
     }
     if (event === 'SIGNED_OUT') {
-      renderHistoricoLogout();
+      if (typeof renderHistoricoLogout === 'function') renderHistoricoLogout();
     }
   });
 
-  // Verifica sessão atual
+  // Verifica sessão atual (inclui OAuth callback)
   const { data: { session } } = await supabaseClient.auth.getSession();
   currentUser = session?.user || null;
   renderAuthUI();
+
+  // Se voltou de OAuth redirect, limpa o hash da URL
+  if (window.location.hash.includes('access_token') || window.location.hash.includes('error')) {
+    history.replaceState(null, '', window.location.pathname);
+  }
+
   return supabaseClient;
 }
 
@@ -38,7 +54,10 @@ async function loginGoogle() {
   const sb = await initSupabase();
   await sb.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: window.location.href }
+    options: {
+      redirectTo: window.location.origin + window.location.pathname,
+      queryParams: { access_type: 'offline', prompt: 'consent' }
+    }
   });
 }
 

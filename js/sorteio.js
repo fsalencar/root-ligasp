@@ -19,6 +19,8 @@ function init() {
   renderExpansions();
   renderMaps();
   updateReachInfo();
+  // Restore tab from URL hash (after page reload)
+  setTimeout(restoreTabFromHash, 50);
 }
 
 // ===================== JOGADORES =====================
