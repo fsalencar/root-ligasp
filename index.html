@@ -15,14 +15,18 @@
     <h1>Root — Sorteio de Facções</h1>
     <p>Seguindo as regras oficiais de Alcance · Liga Root SP</p>
   </div>
+  <button id="authBtn" onclick="showAuthModal()">🔐 Entrar</button>
+  <div id="userInfo"></div>
 </header>
 
 <main class="main">
 
   <div class="liga-tabs" style="flex-wrap:wrap;">
-    <button class="liga-tab active" onclick="switchTab('sorteio',this)" style="flex:1;min-width:120px;">⚔ Sorteio de Facções</button>
-    <button class="liga-tab" onclick="switchTab('mapa',this)" style="flex:1;min-width:120px;">🗺️ Sortear apenas Mapas e/ou Clareiras</button>
-    <button class="liga-tab" onclick="switchTab('liga',this)" style="flex:1;min-width:120px;">🏆 Gerar Resultado para a Liga</button>
+    <button class="liga-tab active" data-tab="sorteio" onclick="switchTab('sorteio',this)" style="flex:1;min-width:100px;">⚔ Sorteio</button>
+    <button class="liga-tab" data-tab="partida" onclick="switchTab('partida',this)" style="flex:1;min-width:100px;">🎮 Partida em Andamento</button>
+    <button class="liga-tab" data-tab="mapa" onclick="switchTab('mapa',this)" style="flex:1;min-width:100px;">🗺️ Mapa & Clareiras</button>
+    <button class="liga-tab" data-tab="liga" onclick="switchTab('liga',this)" style="flex:1;min-width:100px;">🏆 Liga</button>
+    <button class="liga-tab" data-tab="historico" onclick="switchTab('historico',this)" style="flex:1;min-width:100px;">📋 Histórico</button>
   </div>
 
   <!-- ===== ABA SORTEIO ===== -->
@@ -208,12 +212,39 @@
 
   </div><!-- /tab-liga -->
 
+
+<!-- ===== MODAL DE LOGIN ===== -->
+<div class="auth-modal" id="authModal" onclick="if(event.target===this)hideAuthModal()">
+  <div class="auth-box">
+    <button class="auth-close" onclick="hideAuthModal()">✕</button>
+    <div class="auth-title">🔐 Entrar na Liga Root SP</div>
+
+    <button class="auth-btn-google" onclick="loginGoogle()">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 6.294C4.672 4.167 6.656 3.58 9 3.58z"/></svg>
+      Entrar com Google
+    </button>
+
+    <div class="auth-divider">— ou use seu email —</div>
+
+    <input class="auth-input" type="email" id="authEmail" placeholder="Email">
+    <input class="auth-input" type="password" id="authSenha" placeholder="Senha (mín. 6 caracteres)">
+    <button class="btn-sortear" style="margin-top:4px;" onclick="submitEmailLogin()">Entrar / Criar conta</button>
+    <div class="auth-msg" id="authMsg"></div>
+
+    <p style="font-size:0.72rem;color:var(--text3);font-family:sans-serif;text-align:center;margin-top:1rem;line-height:1.5;">
+      Ao entrar, suas partidas serão salvas automaticamente.<br>O login é opcional — o app funciona sem conta.
+    </p>
+  </div>
+</div>
 </main>
 
 <script src="js/maps.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/data.js"></script>
 <script src="js/contadores.js"></script>
 <script src="js/sorteio.js"></script>
+<script src="js/partida.js"></script>
+<script src="js/historico.js"></script>
 <script src="js/liga.js"></script>
 
 <footer style="background:var(--surface);border-top:1px solid var(--border);padding:1.5rem 2rem;margin-top:3rem;text-align:center;">

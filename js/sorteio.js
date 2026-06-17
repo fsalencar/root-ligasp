@@ -2,8 +2,6 @@
 
 const SUIT_EMOJI  = { F: '🦊', R: '🐭', C: '🐇' };
 
-const REACH_MIN = { 2: 17, 3: 18, 4: 21, 5: 25, 6: 28 };
-
 // ===================== ESTADO =====================
 let numPlayers = 3;
 let selectedExpansions = new Set(['base']);
@@ -396,6 +394,10 @@ function sortear() {
   sbIncrement('sorteio');
   if (mapArr.length > 1) sbIncrement('mapa');
   renderResult(facResult, names, chosenMap, mapArr.length > 1, clearingResult, chosenDeck);
+  // Cria partida em andamento se usuário logado ou sempre (salva local)
+  const shuffledNamesForPartida = shuffle(names);
+  criarPartida(facResult, shuffledNamesForPartida, chosenMap, chosenDeck);
+  atualizarBadgePartida(true);
 }
 
 function showError(msg) {

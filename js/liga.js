@@ -383,6 +383,16 @@ function gerarResultadoLiga() {
   document.getElementById('btnCopiar').textContent = '📋 Copiar';
   document.getElementById('btnCopiar').className = 'btn-copiar';
   document.getElementById('ligaResultBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Finaliza partida em andamento com os dados do resultado
+  if (typeof finalizarPartida === 'function') {
+    const jogadoresFinais = sorted.map(p => ({
+      nome: p.name, faccao: p.facName,
+      pontuacao: p.vitDom ? null : (p.derDomFlag ? null : p.score),
+      vencedor: sorted.indexOf(p) === 0 && !p.derDomFlag,
+      iniciante: p.iniciante,
+    }));
+    finalizarPartida(jogadoresFinais);
+  }
 }
 
 function copiarResultado() {
@@ -413,3 +423,5 @@ function copiarResultado() {
 // Inicialização — executada após todos os scripts carregarem
 init();
 sbLoadCounters();
+initSupabase();
+restaurarPartidaSeExistir();

@@ -41,6 +41,3 @@ async function sbLoadCounters() {
   } catch(e) { console.warn('Counter load error:', e); }
 }
 // ===============================================================
-
-init();
-sbLoadCounters();
