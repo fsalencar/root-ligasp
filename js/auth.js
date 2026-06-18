@@ -38,7 +38,8 @@ async function initSupabase() {
     }
     if (event === 'SIGNED_OUT') {
       if (typeof renderHistoricoLogout === 'function') renderHistoricoLogout();
-      if (typeof renderLudopediaStatus === 'function') renderLudopediaStatus(); // mantém chip se tiver token
+      if (typeof renderLudopediaStatus === 'function') renderLudopediaStatus();
+      if (typeof resetSlotProprio === 'function') resetSlotProprio();
     }
   });
 
@@ -146,49 +147,62 @@ async function abrirModalPerfil() {
 
   modal.style.display = 'flex';
   modal.innerHTML = `
-    <div class="modal-box" style="max-width:360px;width:95%;text-align:center;">
-      <div class="modal-header" style="justify-content:flex-end;">
+    <div class="modal-box perfil-modal" style="max-width:360px;width:95%;">
+      <div class="modal-header" style="justify-content:flex-end;margin-bottom:0.5rem;">
         <button onclick="fecharGerenciarJogadores()" class="modal-close-btn">×</button>
       </div>
 
-      <!-- Avatar -->
-      <div style="position:relative;display:inline-block;margin-bottom:0.75rem;">
-        ${avatar
-          ? `<img src="${avatar}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid var(--border);">`
-          : `<div style="width:72px;height:72px;border-radius:50%;background:var(--surface2);border:3px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto;">👤</div>`}
+      <!-- Avatar + nome -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:1rem;">
+        <div style="position:relative;flex-shrink:0;">
+          ${avatar
+            ? `<img src="${avatar}" style="width:54px;height:54px;border-radius:50%;object-fit:cover;border:2px solid var(--border);">`
+            : `<div style="width:54px;height:54px;border-radius:50%;background:var(--surface2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.6rem;">👤</div>`}
+          ${temLudo ? `<span class="perfil-ludo-dot">🎲</span>` : ''}
+        </div>
+        <div style="min-width:0;">
+          <div style="font-size:1rem;font-weight:600;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${nome}</div>
+          <div style="font-size:0.73rem;color:var(--text3);font-family:sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${email}</div>
+        </div>
       </div>
-      <div style="font-size:1.05rem;font-weight:600;color:var(--text1);margin-bottom:2px;">${nome}</div>
-      <div style="font-size:0.75rem;color:var(--text3);font-family:sans-serif;margin-bottom:1rem;">${email}</div>
 
       <!-- Ludopedia -->
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem;margin-bottom:0.75rem;text-align:left;">
-        <div style="font-size:0.7rem;color:var(--text3);font-family:sans-serif;letter-spacing:0.05em;margin-bottom:6px;">LUDOPEDIA</div>
+      <div class="perfil-section">
+        <div class="perfil-section-label">LUDOPEDIA</div>
         ${temLudo ? `
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:1.2rem;">🎲</span>
-            <div style="flex:1;">
-              <div style="font-family:sans-serif;font-size:0.88rem;color:#80d060;font-weight:600;">${ludoNome}</div>
-              ${ludoIdNum ? `<div style="font-family:sans-serif;font-size:0.7rem;color:var(--text3);">ID: ${ludoIdNum}</div>` : ''}
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:1.4rem;">🎲</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-family:sans-serif;font-size:0.9rem;color:#80d060;font-weight:600;">${ludoNome}</div>
+              ${ludoIdNum ? `<div style="font-family:sans-serif;font-size:0.68rem;color:var(--text3);">ID Ludopedia: ${ludoIdNum}</div>` : ''}
             </div>
-            <button class="ludo-btn-sm" style="color:#f09080;border-color:rgba(240,144,128,0.3);" onclick="desconectarLudopedia();fecharGerenciarJogadores();">Desconectar</button>
+            <button class="ludo-btn-sm" style="color:#f09080;border-color:rgba(240,144,128,0.3);flex-shrink:0;" onclick="desconectarLudopedia();fecharGerenciarJogadores();">Desconectar</button>
           </div>` : `
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-            <span style="font-family:sans-serif;font-size:0.82rem;color:var(--text3);">Não conectado</span>
-            <button class="ludo-btn-sm" onclick="fecharGerenciarJogadores();conectarLudopedia();">Conectar</button>
+            <span style="font-family:sans-serif;font-size:0.82rem;color:var(--text3);">Conta não conectada</span>
+            <button class="ludo-btn-sm" onclick="fecharGerenciarJogadores();conectarLudopedia();">Conectar 🎲</button>
           </div>`}
       </div>
 
-      <!-- QR Code do perfil -->
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem;margin-bottom:0.75rem;">
-        <div style="font-size:0.7rem;color:var(--text3);font-family:sans-serif;letter-spacing:0.05em;margin-bottom:8px;">MEU QR CODE</div>
-        <div id="perfilQRBox" style="margin:0 auto;width:164px;height:164px;"></div>
-        <div style="font-family:sans-serif;font-size:0.72rem;color:var(--text3);margin-top:6px;line-height:1.4;">
-          Compartilhe para ser adicionado em partidas
+      <!-- QR Code -->
+      <div class="perfil-section perfil-qr-section">
+        <div class="perfil-section-label">MEU CÓDIGO DE JOGADOR</div>
+        <p style="font-family:sans-serif;font-size:0.75rem;color:var(--text3);margin:0 0 10px;line-height:1.4;">
+          Peça ao organizador da partida para escanear este QR ou compartilhe seu ID para ser adicionado.
+        </p>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div class="perfil-qr-frame">
+            <div id="perfilQRBox"></div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:8px;justify-content:center;min-width:0;">
+            <div style="font-family:sans-serif;font-size:0.7rem;color:var(--text3);">SEU ID</div>
+            <div style="font-family:monospace;font-size:0.68rem;color:var(--text2);word-break:break-all;background:var(--surface);padding:6px 8px;border-radius:6px;border:1px solid var(--border);">${userId}</div>
+            <button class="btn-sortear" style="font-size:0.78rem;padding:0.4rem;" onclick="navigator.clipboard.writeText('${userId}').then(()=>{this.textContent='✓ Copiado!';setTimeout(()=>this.textContent='📋 Copiar ID',1500)})">📋 Copiar ID</button>
+          </div>
         </div>
-        <button class="ludo-btn-sm" style="margin-top:6px;" onclick="navigator.clipboard.writeText('${userId}').then(()=>this.textContent='✓ Copiado!').catch(()=>this.textContent='ID: ${userId.slice(0,8)}...')">Copiar meu ID</button>
       </div>
 
-      <button onclick="logout();fecharGerenciarJogadores();" style="background:transparent;border:1px solid var(--border);border-radius:var(--radius);color:var(--text3);font-size:0.82rem;padding:0.4rem 1rem;cursor:pointer;width:100%;">Sair da conta</button>
+      <button onclick="logout();fecharGerenciarJogadores();" class="perfil-logout-btn">Sair da conta</button>
     </div>`;
 
   // Gera QR Code com o ID do usuário

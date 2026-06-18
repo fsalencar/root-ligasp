@@ -41,21 +41,26 @@ async function _removerJogadorDoBanco(id) {
 
 // ── Dados por slot ─────────────────────────────────────────────────────────────
 
+// Flag: só auto-preenche UMA vez por sessão de login
+// Evita re-preencher quando o Supabase dispara SIGNED_IN no refresh de token
+let _slotProprioJaPreenchido = false;
+
+function resetSlotProprio() { _slotProprioJaPreenchido = false; }
+
 // Auto-preenche o primeiro slot vazio com o usuário logado
 function preencherSlotProprio() {
+  if (_slotProprioJaPreenchido) return;
   if (typeof currentUser === 'undefined' || !currentUser) return;
   if (typeof numPlayers === 'undefined' || numPlayers === 0) return;
 
-  const nomeUser  = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || '';
-  const ludoNome  = (typeof ludoUser !== 'undefined') ? (ludoUser?.usuario || ludoUser?.nm_usuario || '') : '';
-  const ludoId    = (typeof ludoUser !== 'undefined') ? ludoUser?.id_usuario : null;
+  const nomeUser = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || '';
+  const ludoNome = (typeof ludoUser !== 'undefined') ? (ludoUser?.usuario || ludoUser?.nm_usuario || '') : '';
+  const ludoId   = (typeof ludoUser !== 'undefined') ? ludoUser?.id_usuario : null;
 
-  // Verifica se já está em algum slot (pelo nome do app ou Ludopedia)
-  for (let i = 0; i < numPlayers; i++) {
-    const val = (document.getElementById('playerName_' + i)?.value || '').trim().toLowerCase();
-    if (!val) continue;
-    if (nomeUser && val === nomeUser.toLowerCase()) return;
-    if (ludoNome && val === ludoNome.toLowerCase()) return;
+  // Se o grid ainda não foi renderizado, agenda para daqui a pouco
+  if (!document.getElementById('playerName_0')) {
+    setTimeout(preencherSlotProprio, 300);
+    return;
   }
 
   // Preenche o primeiro slot vazio
@@ -64,13 +69,16 @@ function preencherSlotProprio() {
     if (!inp || inp.value.trim()) continue;
 
     inp.value = nomeUser || ludoNome;
-
     if (ludoId) {
       _playerLudoSlot[i] = { ludopedia_id: ludoId, ludopedia_usuario: ludoNome };
       _refreshSlotBadge(i);
     }
+    _slotProprioJaPreenchido = true;
     break;
   }
+
+  // Marca como preenchido mesmo que todos os slots já estivessem ocupados
+  _slotProprioJaPreenchido = true;
 }
 
 function getLudoDataParaSlot(i) {
