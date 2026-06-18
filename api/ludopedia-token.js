@@ -10,15 +10,9 @@ module.exports = async function handler(req, res) {
   if (!code) return res.status(400).json({ error: 'Missing code' });
 
   try {
-    const params = new URLSearchParams({
-      grant_type: 'authorization_code',
-      code,
-      redirect_uri: 'https://root-ligasp.vercel.app/',
-      client_id: process.env.LUDOPEDIA_CLIENT_ID,
-      client_secret: process.env.LUDOPEDIA_CLIENT_SECRET,
-    });
+    const params = new URLSearchParams({ code });
 
-    const response = await fetch('https://ludopedia.com.br/api/oauth2/token', {
+    const response = await fetch('https://ludopedia.com.br/tokenrequest', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params.toString(),

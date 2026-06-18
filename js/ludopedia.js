@@ -24,11 +24,10 @@ let _pendingLudoCode = null;
 function conectarLudopedia() {
   localStorage.setItem('ludo_connecting', '1');
   const params = new URLSearchParams({
-    response_type: 'code',
-    client_id: LUDO_CLIENT_ID,
+    app_id: LUDO_CLIENT_ID,
     redirect_uri: LUDO_REDIRECT,
   });
-  window.location.href = `https://ludopedia.com.br/api/oauth2?${params}`;
+  window.location.href = `https://ludopedia.com.br/oauth?${params}`;
 }
 
 async function desconectarLudopedia() {
