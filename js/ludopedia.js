@@ -211,8 +211,21 @@ async function autoRegistrarLudo(resultado, containerId) {
   el.innerHTML = `<div class="ludo-auto-status">⏳ Registrando na Ludopedia...</div>`;
 
   try {
-    await registrarPartidaLudo(resultado);
+    const resp = await registrarPartidaLudo(resultado);
     el.innerHTML = `<div class="ludo-auto-status success">🎲 Registrado na Ludopedia!</div>`;
+
+    // Grava o id_partida da Ludopedia de volta no registro do Supabase
+    const ludoId = resp?.id_partida;
+    const sbId   = resultado._supabaseId;
+    if (ludoId && sbId && typeof currentUser !== 'undefined' && currentUser) {
+      try {
+        const sb = await initSupabase();
+        const { data: row } = await sb.from('historico').select('dados').eq('id', sbId).single();
+        if (row) {
+          await sb.from('historico').update({ dados: { ...row.dados, ludopedia_id: ludoId } }).eq('id', sbId);
+        }
+      } catch (e) { console.warn('Erro ao gravar ludopedia_id no Supabase:', e); }
+    }
   } catch (e) {
     el.innerHTML = `
       <div class="ludo-auto-status error">

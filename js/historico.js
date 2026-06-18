@@ -240,10 +240,15 @@ function renderHistoricoCard(entry) {
           </span>
         `).join('')}
       </div>
-      <div style="margin-top:10px;">
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
         <button class="btn-copiar" onclick="compartilharHistoricoWhatsApp('${entry.id}')" style="background:#25D366;color:white;font-size:0.75rem;">
           📲 WhatsApp
         </button>
+        ${d.ludopedia_id ? `
+        <a href="https://ludopedia.com.br/partida?id_partida=${d.ludopedia_id}" target="_blank"
+           class="btn-copiar" style="display:inline-block;text-decoration:none;font-size:0.75rem;background:rgba(74,143,48,0.15);border:1px solid rgba(74,143,48,0.4);color:#80d060;">
+          🎲 Ver na Ludopedia ↗
+        </a>` : ''}
       </div>
     </div>`;
 }

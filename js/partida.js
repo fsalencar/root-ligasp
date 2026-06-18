@@ -65,16 +65,17 @@ function finalizarPartida(jogadoresFinais) {
     criadoEm: new Date().toISOString(),
   };
 
-  if (typeof currentUser !== 'undefined' && currentUser) {
-    salvarHistoricoSupabase(resultado);
-  }
-
   localStorage.removeItem('partidaAtual');
   partidaAtual = null;
   estadoPartida = 'ativo';
   atualizarBadgePartida(false);
   stopTimer();
   renderPartida();
+
+  // Salva no Supabase e anota o ID no resultado (usado pela Liga para vincular ao Ludopedia)
+  if (typeof currentUser !== 'undefined' && currentUser) {
+    salvarHistoricoSupabase(resultado).then(id => { resultado._supabaseId = id; });
+  }
 }
 
 // ── Salvar no Supabase ───────────────────────────────────────────────────────
@@ -82,18 +83,21 @@ function finalizarPartida(jogadoresFinais) {
 async function salvarHistoricoSupabase(resultado) {
   try {
     const sb = await initSupabase();
-    await sb.from('historico').insert({
+    const { data, error } = await sb.from('historico').insert({
       user_id: currentUser.id,
       dados: resultado,
       criado_em: resultado.criadoEm,
-    });
+    }).select('id').single();
+    if (error) throw error;
     if (typeof carregarHistorico === 'function') {
       if (document.getElementById('tab-historico')?.classList.contains('active')) {
         carregarHistorico();
       }
     }
+    return data?.id || null; // Retorna o UUID do registro para vincular ao Ludopedia
   } catch (e) {
     console.warn('Erro ao salvar histórico:', e);
+    return null;
   }
 }
 
@@ -437,10 +441,6 @@ function gerarResultadoPartida() {
     criadoEm: new Date().toISOString(),
   };
 
-  if (typeof currentUser !== 'undefined' && currentUser) {
-    salvarHistoricoSupabase(resultado);
-  }
-
   localStorage.removeItem('partidaAtual');
   resultadoGerado = { texto: textoResultado, jogadores: jogadoresFinais };
   partidaAtual = null;
@@ -451,10 +451,17 @@ function gerarResultadoPartida() {
   const section = document.getElementById('tab-partida');
   if (section) renderResultadoPartida(section);
 
-  // Ludopedia — registro automático ao finalizar partida
-  if (typeof autoRegistrarLudo === 'function') {
-    setTimeout(() => autoRegistrarLudo(resultado, 'ludoBtnContainerPartida'), 50);
-  }
+  // Salva no Supabase e registra na Ludopedia em paralelo
+  (async () => {
+    let supabaseId = null;
+    if (typeof currentUser !== 'undefined' && currentUser) {
+      supabaseId = await salvarHistoricoSupabase(resultado);
+    }
+    if (typeof autoRegistrarLudo === 'function') {
+      resultado._supabaseId = supabaseId;
+      autoRegistrarLudo(resultado, 'ludoBtnContainerPartida');
+    }
+  })();
 }
 
 // ── Exibir resultado ─────────────────────────────────────────────────────────
