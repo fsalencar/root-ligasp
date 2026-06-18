@@ -70,7 +70,14 @@ async function carregarPerfilLudo() {
 }
 
 async function buscarUsuarioLudo(nmUsuario) {
-  return ludoFetch(`usuarios/${encodeURIComponent(nmUsuario)}`);
+  // A API retorna lista paginada — filtra por nm_usuario e busca correspondência exata
+  const data = await ludoFetch(`usuarios?nm_usuario=${encodeURIComponent(nmUsuario)}&rows=50`);
+  if (Array.isArray(data?.usuarios)) {
+    const lc = nmUsuario.toLowerCase().trim();
+    // Tenta match exato, depois match sem espaços (API às vezes retorna " BBCVSFD" com espaço)
+    return data.usuarios.find(u => (u.usuario || '').toLowerCase().trim() === lc) || null;
+  }
+  return null;
 }
 
 async function _getRootId() {
@@ -273,13 +280,12 @@ async function pesquisarJogadorLudo(inputId, resultId, i) {
   if (!el || !nick) return;
   el.innerHTML = '<span style="font-size:0.75rem;color:var(--text3);font-family:sans-serif;">Buscando...</span>';
   try {
-    const data = await buscarUsuarioLudo(nick);
-    const u = data?.usuario || data;
-    if (u?.nm_usuario) {
+    const u = await buscarUsuarioLudo(nick); // retorna { id_usuario, usuario } ou null
+    if (u?.usuario) {
       el.innerHTML = `
         <div class="ludo-user-found">
-          <span>✓ ${u.nm_usuario}</span>
-          <button onclick="confirmarNickLudo(${i},'${u.nm_usuario}','${resultId}')" class="ludo-btn-sm">Vincular</button>
+          <span>✓ ${u.usuario}</span>
+          <button onclick="confirmarNickLudo(${i},'${u.usuario}','${resultId}')" class="ludo-btn-sm">Vincular</button>
         </div>`;
     } else {
       el.innerHTML = '<span style="font-size:0.75rem;color:#f09080;font-family:sans-serif;">Usuário não encontrado</span>';
