@@ -70,6 +70,7 @@ function renderPlayersGrid() {
   grid.querySelectorAll('input[type=text]').forEach(i => existingNames.push(i.value));
   grid.querySelectorAll('select.player-fac-sel').forEach(s => existingFacs.push(s.value));
   grid.innerHTML = '';
+  if (typeof resetPlayerLudoSlots === 'function') resetPlayerLudoSlots();
   for (let i = 0; i < numPlayers; i++) {
     const d = document.createElement('div');
     d.className = 'player-field';
@@ -83,6 +84,8 @@ function renderPlayersGrid() {
         </select>
       </div>`;
     grid.appendChild(d);
+    const inp = d.querySelector('input[type=text]');
+    if (typeof attachPlayerAutocomplete === 'function') attachPlayerAutocomplete(inp, i);
   }
   updatePlayerFacOptions();
 }

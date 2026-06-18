@@ -424,13 +424,18 @@ function gerarResultadoPartida() {
 
   const textoResultado = lines.join('\n');
 
-  const jogadoresFinais = sorted.map((p, i) => ({
-    nome: p.nome,
-    faccao: p.faccao,
-    pontuacao: p.vitDom || p.derDomFlag ? null : p.score,
-    vencedor: i === 0 && !p.derDomFlag,
-    iniciante: p.iniciante,
-  }));
+  const jogadoresFinais = sorted.map((p, i) => {
+    const ludo = (typeof getLudoDataParaSlot === 'function') ? getLudoDataParaSlot(p.slotIndex ?? i) : null;
+    return {
+      nome: p.nome,
+      faccao: p.faccao,
+      pontuacao: p.vitDom || p.derDomFlag ? null : p.score,
+      vencedor: i === 0 && !p.derDomFlag,
+      iniciante: p.iniciante,
+      ludopedia_id: ludo?.ludopedia_id || null,
+      ludopedia_usuario: ludo?.ludopedia_usuario || null,
+    };
+  });
 
   // Salvar
   const resultado = {

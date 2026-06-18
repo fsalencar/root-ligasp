@@ -26,6 +26,7 @@ async function initSupabase() {
       if (typeof restoreTabFromHash === 'function') restoreTabFromHash();
       if (typeof carregarHistorico === 'function') carregarHistorico();
       if (typeof initLudopedia === 'function') initLudopedia();
+      if (typeof carregarJogadoresCadastrados === 'function') carregarJogadoresCadastrados();
     }
     if (event === 'SIGNED_OUT') {
       if (typeof renderHistoricoLogout === 'function') renderHistoricoLogout();

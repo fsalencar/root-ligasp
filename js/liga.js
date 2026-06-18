@@ -416,12 +416,17 @@ function gerarResultadoLiga() {
   document.getElementById('btnCopiar').textContent = '📋 Copiar';
   document.getElementById('btnCopiar').className = 'btn-copiar';
   document.getElementById('ligaResultBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  const jogadoresFinais = sorted.map((p, i) => ({
-    nome: p.name, faccao: p.facName,
-    pontuacao: p.vitDom ? null : (p.derDomFlag ? null : p.score),
-    vencedor: i === 0 && !p.derDomFlag,
-    iniciante: p.iniciante,
-  }));
+  const jogadoresFinais = sorted.map((p, i) => {
+    const ludo = (typeof getLudoDataParaSlot === 'function') ? getLudoDataParaSlot(p.slotIndex ?? i) : null;
+    return {
+      nome: p.name, faccao: p.facName,
+      pontuacao: p.vitDom ? null : (p.derDomFlag ? null : p.score),
+      vencedor: i === 0 && !p.derDomFlag,
+      iniciante: p.iniciante,
+      ludopedia_id: ludo?.ludopedia_id || null,
+      ludopedia_usuario: ludo?.ludopedia_usuario || null,
+    };
+  });
 
   // Finaliza partida em andamento com os dados do resultado
   if (typeof finalizarPartida === 'function') finalizarPartida(jogadoresFinais);

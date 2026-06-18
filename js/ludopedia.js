@@ -125,10 +125,11 @@ async function registrarPartidaLudo(resultado) {
   }
 
   // Monta array de jogadores no formato da API Ludopedia
+  // Usa id_usuario do cadastro de jogadores (se disponível) ou do usuário logado
   const jogadoresLudo = jogadores.map(j => ({
     id_partida_jogador: 0,
     nome:       j.nome,
-    id_usuario: isMe(j) ? idLogado : null,
+    id_usuario: j.ludopedia_id || (isMe(j) ? idLogado : null),
     fl_vencedor: j.vencedor ? 1 : 0,
     vl_pontos:   j.pontuacao !== null && j.pontuacao !== undefined ? j.pontuacao : null,
     observacao:  j.faccao || null,

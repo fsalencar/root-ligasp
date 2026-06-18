@@ -48,7 +48,10 @@
   </div>
 
   <div class="section">
-    <div class="section-title">Nome dos jogadores</div>
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>Nome dos jogadores</span>
+      <button class="ludo-btn-sm" onclick="abrirGerenciarJogadores()" style="font-size:0.72rem;">👥 Gerenciar jogadores</button>
+    </div>
     <div class="players-grid" id="playersGrid"></div>
   </div>
 
@@ -257,6 +260,10 @@
     </div>
   </div>
 </div>
+
+<!-- Modal Gerenciar Jogadores -->
+<div class="auth-modal" id="modalJogadores" onclick="if(event.target===this)fecharGerenciarJogadores()" style="display:none;"></div>
+
 </main>
 
 <script src="js/maps.js"></script>
@@ -264,6 +271,7 @@
 <script src="js/contadores.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/ludopedia.js"></script>
+<script src="js/jogadores.js"></script>
 <script src="js/sorteio.js"></script>
 <script src="js/partida.js"></script>
 <script src="js/historico.js"></script>
