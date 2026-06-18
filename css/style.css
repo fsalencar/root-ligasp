@@ -661,24 +661,54 @@
   .ludo-auto-status.success { color: #80d060; border-color: rgba(74,143,48,0.4); background: rgba(74,143,48,0.08); }
   .ludo-auto-status.error   { color: #f09080; border-color: rgba(200,64,40,0.3); background: rgba(200,64,40,0.06); }
 
-  /* ── Player chips no grid de sorteio ───────────── */
-  .player-chip-row {
-    display: flex; align-items: center; gap: 6px;
-    padding: 4px 0; margin-bottom: 4px;
+  /* ── Botão "+" por slot e badge ────────────────── */
+  .player-slot-plus {
+    background: rgba(218,165,32,0.15);
+    border: 1px solid rgba(218,165,32,0.3);
+    color: var(--gold);
+    border-radius: 50%;
+    width: 22px; height: 22px;
+    font-size: 1rem; line-height: 1;
+    cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0;
   }
-  .player-chip-name { font-family: sans-serif; font-size: 0.88rem; color: var(--text2); flex: 1; }
-  .player-ludo-badge { font-size: 0.72rem; color: #80d060; }
-  .player-guest-badge {
-    font-size: 0.65rem; color: var(--text3);
-    background: rgba(255,255,255,0.07);
-    padding: 1px 6px; border-radius: 3px;
+  .player-slot-plus:hover { background: rgba(218,165,32,0.3); }
+
+  .player-slot-badge { min-height: 0; }
+  .slot-badge-ludo {
+    display: inline-block;
+    font-family: sans-serif; font-size: 0.7rem; color: #80d060;
+    margin-bottom: 3px;
   }
-  .player-chip-remove {
-    background: none; border: none; color: var(--text3);
-    cursor: pointer; font-size: 0.85rem; padding: 2px 6px;
-    border-radius: 4px; line-height: 1;
+
+  /* ── Painel inline de seleção por slot ──────────── */
+  .slot-painel {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.6rem 0.75rem;
+    margin: 4px 0 6px;
+    z-index: 100;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
   }
-  .player-chip-remove:hover { background: rgba(240,100,80,0.15); color: #f09080; }
+  .slot-painel-search {
+    width: 100%;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--text1);
+    font-size: 0.8rem;
+  }
+  .slot-painel-lista { max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+  .slot-painel-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0.4rem 0.5rem;
+    border-radius: 4px; cursor: pointer;
+    transition: background 0.1s;
+  }
+  .slot-painel-item:hover { background: rgba(218,165,32,0.1); }
 
   /* ── Modal de seleção de jogadores ─────────────── */
   .modal-header {

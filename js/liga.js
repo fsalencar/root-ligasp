@@ -382,7 +382,7 @@ function gerarResultadoLiga() {
       if (vtype) facName = 'Malandro (' + vtype + ')';
     }
 
-    players.push({ name, facName, score, iniciante, vitDom, derDom, derDomFlag: derDom });
+    players.push({ name, facName, score, iniciante, vitDom, derDom, derDomFlag: derDom, slotIdx: i });
   }
 
   // Sort: derrota por domínio goes last; otherwise by score desc, vitória por domínio first in ties
@@ -417,7 +417,7 @@ function gerarResultadoLiga() {
   document.getElementById('btnCopiar').className = 'btn-copiar';
   document.getElementById('ligaResultBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
   const jogadoresFinais = sorted.map((p, i) => {
-    const ludo = (typeof getLudoDataParaSlot === 'function') ? getLudoDataParaSlot(p.slotIndex ?? i) : null;
+    const ludo = (typeof getLudoDataParaSlot === 'function') ? getLudoDataParaSlot(p.slotIdx ?? i) : null;
     return {
       nome: p.name, faccao: p.facName,
       pontuacao: p.vitDom ? null : (p.derDomFlag ? null : p.score),

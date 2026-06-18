@@ -14,11 +14,26 @@ let minInsurgentes = 0; // 0=livre, 1=ao menos 1, 2=ao menos 2
 
 // ===================== INIT =====================
 function init() {
+  renderCountBtns();
   renderPlayersGrid();
   renderExpansions();
   renderMaps();
   updateReachInfo();
   setTimeout(restoreTabFromHash, 50);
+}
+
+function renderCountBtns() {
+  document.querySelectorAll('.count-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.n) === numPlayers);
+    btn.onclick = () => {
+      numPlayers = parseInt(btn.dataset.n);
+      minInsurgentes = 0;
+      renderCountBtns();
+      renderPlayersGrid();
+      updateReachInfo();
+      updateInsurgentToggle();
+    };
+  });
 }
 
 function updateInsurgentToggle() {
@@ -57,45 +72,26 @@ function renderPlayersGrid() {
   const grid = document.getElementById('playersGrid');
   if (!grid) return;
 
-  numPlayers = typeof _playersForMatch !== 'undefined' ? _playersForMatch.length : numPlayers;
-
-  // Guarda facções já selecionadas para restaurar
-  const existingFacs = [];
+  const existingNames = [];
+  const existingFacs  = [];
+  grid.querySelectorAll('input.player-name-input').forEach(i => existingNames.push(i.value));
   grid.querySelectorAll('select.player-fac-sel').forEach(s => existingFacs.push(s.value));
-
   grid.innerHTML = '';
 
-  // Botões de adicionar jogador
-  const addRow = document.createElement('div');
-  addRow.style.cssText = 'display:flex;gap:8px;margin-bottom:0.75rem;';
-  addRow.innerHTML = `
-    <button class="btn-sortear" style="flex:1;padding:0.5rem;font-size:0.82rem;" onclick="abrirSelecionarJogadoresModal()">
-      👥 Selecionar jogadores
-    </button>
-    <button class="ludo-btn-sm" style="padding:0.5rem 0.75rem;font-size:0.82rem;" onclick="_adicionarConvidadoPrompt()">
-      + Convidado
-    </button>`;
-  grid.appendChild(addRow);
-
-  if (!_playersForMatch || !_playersForMatch.length) {
-    const empty = document.createElement('div');
-    empty.style.cssText = 'text-align:center;padding:1rem;font-family:sans-serif;font-size:0.82rem;color:var(--text3);';
-    empty.textContent = 'Nenhum jogador selecionado';
-    grid.appendChild(empty);
-    updatePlayerFacOptions();
-    return;
-  }
-
-  _playersForMatch.forEach((p, i) => {
+  for (let i = 0; i < numPlayers; i++) {
     const d = document.createElement('div');
     d.className = 'player-field';
     d.innerHTML = `
-      <div class="player-chip-row">
-        <span class="player-chip-name">${p.nome}</span>
-        ${p.ludopedia_id ? '<span class="player-ludo-badge">🎲</span>' : ''}
-        ${p.isGuest ? '<span class="player-guest-badge">convidado</span>' : ''}
-        <button onclick="removerPlayerMatch(${i})" class="player-chip-remove" title="Remover">✕</button>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+        <label style="flex:1;margin:0;">Jogador ${i+1}</label>
+        <button class="player-slot-plus" onclick="abrirPainelSlot(${i})" title="Selecionar jogador cadastrado">+</button>
       </div>
+      <input type="text" class="player-name-input" id="playerName_${i}"
+        placeholder="Nome do jogador ${i+1}"
+        value="${existingNames[i] || ''}"
+        oninput="limparSlotLudo(${i})"
+        autocomplete="off">
+      <div class="player-slot-badge" id="playerSlotBadge_${i}"></div>
       <div class="player-fac-select">
         <label>Facção:</label>
         <select class="player-fac-sel" id="playerFac_${i}" onchange="onPlayerFacChange()">
@@ -103,15 +99,15 @@ function renderPlayersGrid() {
         </select>
       </div>`;
     grid.appendChild(d);
-  });
+  }
 
   updatePlayerFacOptions();
-
-  // Restaura facções selecionadas
   existingFacs.forEach((fac, i) => {
     const sel = document.getElementById('playerFac_' + i);
     if (sel && fac) sel.value = fac;
   });
+  // Restaura badges dos slots que já tinham jogador vinculado
+  if (typeof _refreshAllSlotBadges === 'function') _refreshAllSlotBadges();
 }
 
 function updatePlayerFacOptions() {
@@ -310,10 +306,12 @@ function updateReachInfo() {
 }
 
 function getPlayerNames() {
-  if (typeof _playersForMatch !== 'undefined' && _playersForMatch.length) {
-    return _playersForMatch.map((p, i) => p.nome || `Jogador ${i+1}`);
+  const names = [];
+  for (let i = 0; i < numPlayers; i++) {
+    const inp = document.getElementById('playerName_' + i);
+    names.push(inp ? (inp.value.trim() || `Jogador ${i+1}`) : `Jogador ${i+1}`);
   }
-  return [];
+  return names;
 }
 
 function shuffle(arr) {

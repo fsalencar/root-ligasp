@@ -381,6 +381,7 @@ function gerarResultadoPartida() {
       derDom,
       derDomFlag: derDom,
       iniciante,
+      slotIdx: i,
     });
   }
 
@@ -425,7 +426,7 @@ function gerarResultadoPartida() {
   const textoResultado = lines.join('\n');
 
   const jogadoresFinais = sorted.map((p, i) => {
-    const ludo = (typeof getLudoDataParaSlot === 'function') ? getLudoDataParaSlot(p.slotIndex ?? i) : null;
+    const ludo = (typeof getLudoDataParaSlot === 'function') ? getLudoDataParaSlot(p.slotIdx ?? i) : null;
     return {
       nome: p.nome,
       faccao: p.faccao,
