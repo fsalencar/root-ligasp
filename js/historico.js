@@ -33,10 +33,79 @@ async function carregarHistorico() {
     }
 
     renderHistoricoData(section, data || []);
+    // Carrega partidas da Ludopedia em paralelo (sem bloquear o histórico do app)
+    carregarHistoricoLudopedia(section);
   } catch (e) {
     renderHistoricoMensagem(section, '⚠️', 'Erro de conexão ao carregar histórico.');
     console.warn('Historico error:', e);
   }
+}
+
+async function carregarHistoricoLudopedia(section) {
+  if (typeof buscarPartidasLudo !== 'function') return;
+  if (typeof ludoToken === 'undefined' || !ludoToken) return;
+
+  // Placeholder enquanto carrega
+  const placeholder = document.createElement('div');
+  placeholder.id = 'ludoHistSection';
+  placeholder.innerHTML = `<div style="font-family:sans-serif;font-size:0.8rem;color:var(--text3);padding:1rem 0;text-align:center;">⏳ Carregando partidas da Ludopedia...</div>`;
+  section.appendChild(placeholder);
+
+  try {
+    const partidas = await buscarPartidasLudo();
+    const el = document.getElementById('ludoHistSection');
+    if (!el) return;
+
+    if (!partidas.length) {
+      el.remove();
+      return;
+    }
+
+    el.innerHTML = `
+      <div class="section" style="margin-top:1rem;">
+        <div class="section-title" style="display:flex;align-items:center;gap:8px;">
+          <span>🎲</span> Partidas de Root na Ludopedia (${partidas.length})
+        </div>
+        ${partidas.map(p => renderCardLudoPartida(p)).join('')}
+      </div>`;
+  } catch (e) {
+    const el = document.getElementById('ludoHistSection');
+    if (el) el.remove();
+    console.warn('Erro partidas Ludopedia:', e);
+  }
+}
+
+function renderCardLudoPartida(p) {
+  const jogadores = p.jogadores || [];
+  const vencedor  = jogadores.find(j => j.fl_vencedor === 1);
+
+  const parts = (p.dt_partida || '').split('-');
+  const dataStr = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : '';
+  const durStr  = p.duracao ? `⏱ ${p.duracao}min` : '';
+
+  return `
+    <div class="hist-card ludo-hist-card">
+      <div class="hist-card-header">
+        <span class="hist-local" style="display:flex;align-items:center;gap:5px;">
+          <span style="font-size:0.7rem;opacity:.6;font-family:sans-serif;">LUDOPEDIA</span>
+        </span>
+        <span class="hist-data">${dataStr}${durStr ? ' · ' + durStr : ''}</span>
+      </div>
+      ${vencedor ? `<div class="hist-vencedor">🏆 ${vencedor.nome}${vencedor.observacao ? ' — ' + vencedor.observacao : ''}</div>` : ''}
+      <div class="hist-jogadores">
+        ${jogadores.map(j => `
+          <span class="hist-jogador${j.fl_vencedor ? ' hist-vencedor-tag' : ''}">
+            ${j.nome}${j.observacao ? ' · ' + j.observacao : ''}${j.vl_pontos != null ? ' · ' + j.vl_pontos + 'pts' : ''}
+          </span>
+        `).join('')}
+      </div>
+      <div style="margin-top:8px;">
+        <a href="https://ludopedia.com.br/partida/${p.id_partida}" target="_blank"
+           style="font-size:0.72rem;color:var(--text3);font-family:sans-serif;text-decoration:none;">
+          Ver na Ludopedia ↗
+        </a>
+      </div>
+    </div>`;
 }
 
 function renderHistoricoLogout() {

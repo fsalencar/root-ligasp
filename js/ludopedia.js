@@ -106,23 +106,41 @@ async function registrarPartidaLudo(resultado) {
   const idJogo = await _getRootId();
   if (!idJogo) throw new Error('Root não encontrado na Ludopedia. Tente novamente mais tarde.');
 
-  // Identifica o jogador logado pelo nm_usuario da Ludopedia
-  const nmLogado = ludoUser?.usuario || ludoUser?.nm_usuario;
+  const nmLogado  = ludoUser?.usuario || ludoUser?.nm_usuario;
+  const idLogado  = ludoUser?.id_usuario || null;
   const jogadores = resultado.jogadores || [];
-  const jogadorLogado = jogadores.find(j => j.ludopedia_nick === nmLogado) || jogadores[0];
-  const ganhou = jogadorLogado?.vencedor ? 'S' : 'N';
-  const pontos = jogadorLogado?.pontuacao ?? 0;
+
+  // Monta array de jogadores no formato da API Ludopedia
+  const jogadoresLudo = jogadores.map(j => ({
+    id_partida_jogador: 0,
+    nome:       j.nome,
+    id_usuario: j.nome === nmLogado ? idLogado : null,
+    fl_vencedor: j.vencedor ? 1 : 0,
+    vl_pontos:   j.pontuacao !== null && j.pontuacao !== undefined ? j.pontuacao : null,
+    observacao:  j.faccao || null,
+  }));
 
   const payload = {
-    id_jogo: idJogo,
-    dt_partida: resultado.data || new Date().toISOString().split('T')[0],
-    fl_ganhou: ganhou,
-    qt_jogadores: jogadores.length,
+    id_partida:  0,
+    qt_partidas: 1,
+    fl_digital:  0,
+    duracao:     resultado.duracao_minutos || null,
+    dt_partida:  resultado.data || new Date().toISOString().split('T')[0],
+    descricao:   resultado.local ? `Local: ${resultado.local}` : null,
+    jogo:        { id_jogo: idJogo },
+    expansoes:   [],
+    jogadores:   jogadoresLudo,
   };
-  if (pontos) payload.vl_pontos = pontos;
-  if (resultado.local) payload.ds_local = resultado.local;
 
   return ludoFetch('partidas', { method: 'POST', body: payload });
+}
+
+async function buscarPartidasLudo() {
+  if (!ludoToken || !ludoUser?.id_usuario) return [];
+  const idJogo = await _getRootId();
+  if (!idJogo) return [];
+  const data = await ludoFetch(`partidas?id_jogo=${idJogo}&id_usuario_jogador=${ludoUser.id_usuario}&rows=50`);
+  return data?.partidas || [];
 }
 
 // ── Supabase — salvar/carregar token ─────────────────────────────────────────
