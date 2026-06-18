@@ -27,7 +27,7 @@ module.exports = async function handler(req, res) {
     }
     if (!user) return res.json({ found: false });
 
-    const nome = user.user_metadata?.full_name || email.split('@')[0];
+    const nome = user.user_metadata?.full_name || (user.email || email || '').split('@')[0];
 
     // Busca token Ludopedia desse usuário
     const tokenRes = await fetch(
