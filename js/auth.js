@@ -25,8 +25,16 @@ async function initSupabase() {
       hideAuthModal();
       if (typeof restoreTabFromHash === 'function') restoreTabFromHash();
       if (typeof carregarHistorico === 'function') carregarHistorico();
-      if (typeof initLudopedia === 'function') initLudopedia();
-      if (typeof carregarJogadoresCadastrados === 'function') carregarJogadoresCadastrados();
+      // Inicia Ludopedia e depois pré-preenche o slot do próprio usuário
+      if (typeof initLudopedia === 'function') {
+        initLudopedia().then(() => {
+          if (typeof carregarJogadoresCadastrados === 'function') carregarJogadoresCadastrados();
+          if (typeof preencherSlotProprio === 'function') preencherSlotProprio();
+        });
+      } else {
+        if (typeof carregarJogadoresCadastrados === 'function') carregarJogadoresCadastrados();
+        if (typeof preencherSlotProprio === 'function') preencherSlotProprio();
+      }
     }
     if (event === 'SIGNED_OUT') {
       if (typeof renderHistoricoLogout === 'function') renderHistoricoLogout();
