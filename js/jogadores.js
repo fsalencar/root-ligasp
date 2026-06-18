@@ -573,16 +573,25 @@ async function _buscarLudoParaForm() {
   el.style.color = 'var(--text3)'; el.textContent = '⏳ Buscando na Ludopedia...';
   try {
     const data = await buscarUsuarioLudo(nick);
+    console.log('[Ludopedia buscar usuário] resposta:', JSON.stringify(data));
     const u = data?.usuario || data;
-    // Checa nm_usuario (sempre presente) — id_usuario pode estar ausente dependendo do endpoint
-    if (u?.nm_usuario) {
-      document.getElementById('fjLudoId').value   = u.id_usuario || '';
-      document.getElementById('fjLudoNick').value = u.nm_usuario || nick;
-      if (!document.getElementById('fjNome').value.trim()) document.getElementById('fjNome').value = u.nm_usuario || nick;
+    // Tenta vários nomes de campo possíveis na resposta
+    const nmFound = u?.nm_usuario || u?.usuario || u?.username || u?.name;
+    const idFound = u?.id_usuario || u?.id;
+    if (nmFound) {
+      document.getElementById('fjLudoId').value   = idFound || '';
+      document.getElementById('fjLudoNick').value = nmFound;
+      if (!document.getElementById('fjNome').value.trim()) document.getElementById('fjNome').value = nmFound;
       el.style.color = '#80d060';
-      el.textContent = `✓ ${u.nm_usuario}${u.id_usuario ? ' (ID: ' + u.id_usuario + ')' : ''}`;
-    } else { el.style.color = '#f09080'; el.textContent = 'Usuário não encontrado na Ludopedia.'; }
-  } catch { el.style.color = '#f09080'; el.textContent = 'Erro ao buscar na Ludopedia.'; }
+      el.textContent = `✓ ${nmFound}${idFound ? ' (ID: ' + idFound + ')' : ''}`;
+    } else {
+      el.style.color = '#f09080';
+      el.textContent = 'Não encontrado. Resposta: ' + JSON.stringify(data).slice(0, 120);
+    }
+  } catch (e) {
+    el.style.color = '#f09080';
+    el.textContent = 'Erro: ' + e.message;
+  }
 }
 
 async function _confirmarSalvarJogador() {
