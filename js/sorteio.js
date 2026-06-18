@@ -14,21 +14,11 @@ let minInsurgentes = 0; // 0=livre, 1=ao menos 1, 2=ao menos 2
 
 // ===================== INIT =====================
 function init() {
-  renderCountBtns();
   renderPlayersGrid();
   renderExpansions();
   renderMaps();
   updateReachInfo();
-  // Restore tab from URL hash (after page reload)
   setTimeout(restoreTabFromHash, 50);
-}
-
-// ===================== JOGADORES =====================
-function renderCountBtns() {
-  document.querySelectorAll('.count-btn').forEach(btn => {
-    btn.classList.toggle('active', parseInt(btn.dataset.n) === numPlayers);
-    btn.onclick = () => { numPlayers = parseInt(btn.dataset.n); minInsurgentes = 0; renderCountBtns(); renderPlayersGrid(); updateReachInfo(); updateInsurgentToggle(); };
-  });
 }
 
 function updateInsurgentToggle() {
@@ -65,18 +55,47 @@ function updateInsurgentToggle() {
 
 function renderPlayersGrid() {
   const grid = document.getElementById('playersGrid');
-  const existingNames = [];
+  if (!grid) return;
+
+  numPlayers = typeof _playersForMatch !== 'undefined' ? _playersForMatch.length : numPlayers;
+
+  // Guarda facções já selecionadas para restaurar
   const existingFacs = [];
-  grid.querySelectorAll('input[type=text]').forEach(i => existingNames.push(i.value));
   grid.querySelectorAll('select.player-fac-sel').forEach(s => existingFacs.push(s.value));
+
   grid.innerHTML = '';
-  if (typeof resetPlayerLudoSlots === 'function') resetPlayerLudoSlots();
-  for (let i = 0; i < numPlayers; i++) {
+
+  // Botões de adicionar jogador
+  const addRow = document.createElement('div');
+  addRow.style.cssText = 'display:flex;gap:8px;margin-bottom:0.75rem;';
+  addRow.innerHTML = `
+    <button class="btn-sortear" style="flex:1;padding:0.5rem;font-size:0.82rem;" onclick="abrirSelecionarJogadoresModal()">
+      👥 Selecionar jogadores
+    </button>
+    <button class="ludo-btn-sm" style="padding:0.5rem 0.75rem;font-size:0.82rem;" onclick="_adicionarConvidadoPrompt()">
+      + Convidado
+    </button>`;
+  grid.appendChild(addRow);
+
+  if (!_playersForMatch || !_playersForMatch.length) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'text-align:center;padding:1rem;font-family:sans-serif;font-size:0.82rem;color:var(--text3);';
+    empty.textContent = 'Nenhum jogador selecionado';
+    grid.appendChild(empty);
+    updatePlayerFacOptions();
+    return;
+  }
+
+  _playersForMatch.forEach((p, i) => {
     const d = document.createElement('div');
     d.className = 'player-field';
     d.innerHTML = `
-      <label>Jogador ${i+1}</label>
-      <input type="text" placeholder="Nome do jogador ${i+1}" value="${existingNames[i]||''}">
+      <div class="player-chip-row">
+        <span class="player-chip-name">${p.nome}</span>
+        ${p.ludopedia_id ? '<span class="player-ludo-badge">🎲</span>' : ''}
+        ${p.isGuest ? '<span class="player-guest-badge">convidado</span>' : ''}
+        <button onclick="removerPlayerMatch(${i})" class="player-chip-remove" title="Remover">✕</button>
+      </div>
       <div class="player-fac-select">
         <label>Facção:</label>
         <select class="player-fac-sel" id="playerFac_${i}" onchange="onPlayerFacChange()">
@@ -84,10 +103,15 @@ function renderPlayersGrid() {
         </select>
       </div>`;
     grid.appendChild(d);
-    const inp = d.querySelector('input[type=text]');
-    if (typeof attachPlayerAutocomplete === 'function') attachPlayerAutocomplete(inp, i);
-  }
+  });
+
   updatePlayerFacOptions();
+
+  // Restaura facções selecionadas
+  existingFacs.forEach((fac, i) => {
+    const sel = document.getElementById('playerFac_' + i);
+    if (sel && fac) sel.value = fac;
+  });
 }
 
 function updatePlayerFacOptions() {
@@ -286,11 +310,10 @@ function updateReachInfo() {
 }
 
 function getPlayerNames() {
-  const names = [];
-  document.querySelectorAll('#playersGrid input').forEach((inp, i) => {
-    names.push(inp.value.trim() || `Jogador ${i+1}`);
-  });
-  return names;
+  if (typeof _playersForMatch !== 'undefined' && _playersForMatch.length) {
+    return _playersForMatch.map((p, i) => p.nome || `Jogador ${i+1}`);
+  }
+  return [];
 }
 
 function shuffle(arr) {
