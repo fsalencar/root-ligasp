@@ -78,8 +78,9 @@ async function _getRootId() {
   const cached = localStorage.getItem('ludo_root_id');
   if (cached) { _ludoRootId = parseInt(cached); return _ludoRootId; }
   try {
-    const data = await ludoFetch('jogos?nm_jogo=Root&qt_pagina=20');
-    const lista = data?.data || data?.jogos || (Array.isArray(data) ? data : []);
+    // search = busca por nome, tp_jogo=b = apenas jogos base (não expansões)
+    const data = await ludoFetch('jogos?search=Root&tp_jogo=b&rows=20');
+    const lista = data?.jogos || [];
     const jogo = lista.find(j => j.nm_jogo?.toLowerCase() === 'root')
       || lista.find(j => j.nm_jogo?.toLowerCase().startsWith('root:'))
       || lista.find(j => j.nm_jogo?.toLowerCase().includes('root'));
