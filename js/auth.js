@@ -29,7 +29,7 @@ async function initSupabase() {
     }
     if (event === 'SIGNED_OUT') {
       if (typeof renderHistoricoLogout === 'function') renderHistoricoLogout();
-      if (typeof renderLudopediaStatus === 'function') renderLudopediaStatus();
+      if (typeof renderLudopediaStatus === 'function') renderLudopediaStatus(); // mantém chip se tiver token
     }
   });
 

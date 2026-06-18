@@ -162,9 +162,6 @@ function renderLudopediaStatus() {
   const el = document.getElementById('ludopediaStatus');
   if (!el) return;
 
-  const logado = typeof currentUser !== 'undefined' && currentUser;
-  if (!logado) { el.innerHTML = ''; return; }
-
   if (ludoToken) {
     const nome = ludoUser?.usuario || ludoUser?.nm_usuario || '—';
     el.innerHTML = `
