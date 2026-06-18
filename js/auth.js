@@ -207,7 +207,7 @@ async function abrirModalPerfil() {
 
   // Gera QR Code com o ID do usuário
   if (typeof _gerarQRCode === 'function') {
-    await _gerarQRCode('perfilQRBox', `https://root-ligasp.vercel.app/?pid=${userId}`);
+    await _gerarQRCode('perfilQRBox', `https://root-ligasp.vercel.app/?pid=${userId}`, 118);
   }
 }
 

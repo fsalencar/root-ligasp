@@ -431,24 +431,35 @@ async function _mostrarQRJogador(id, nome) {
   const qrData = `https://root-ligasp.vercel.app/?pid=${id}`;
 
   modal.innerHTML = `
-    <div class="modal-box" style="max-width:320px;width:95%;text-align:center;">
+    <div class="modal-box" style="max-width:340px;width:95%;">
       <div class="modal-header">
         <button onclick="_renderTelaGerenciar()" class="modal-close-btn" style="font-size:1rem;">←</button>
         <span style="font-size:0.95rem;font-weight:600;color:var(--gold);">${nome}</span>
         <button onclick="fecharGerenciarJogadores()" class="modal-close-btn">×</button>
       </div>
-      <div id="qrCodeBox" style="margin:0.75rem auto;width:164px;height:164px;"></div>
-      <div style="font-family:monospace;font-size:0.7rem;color:var(--text3);word-break:break-all;margin-bottom:0.5rem;">ID: ${id}</div>
-      <button class="ludo-btn-sm" style="width:100%;" onclick="navigator.clipboard.writeText('${id}').then(()=>this.textContent='✓ Copiado!')">Copiar ID</button>
-      <p style="font-family:sans-serif;font-size:0.72rem;color:var(--text3);margin-top:0.5rem;line-height:1.4;">
-        Compartilhe este QR ou ID para que o organizador da partida adicione você ao jogo.
-      </p>
+
+      <div class="perfil-section" style="text-align:left;">
+        <div class="perfil-section-label">CÓDIGO DE JOGADOR</div>
+        <p style="font-family:sans-serif;font-size:0.75rem;color:var(--text3);margin:0 0 10px;line-height:1.4;">
+          Mostre ou compartilhe para ser adicionado a uma partida.
+        </p>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div class="perfil-qr-frame">
+            <div id="qrCodeBox"></div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;">
+            <div style="font-family:sans-serif;font-size:0.7rem;color:var(--text3);">ID</div>
+            <div style="font-family:monospace;font-size:0.65rem;color:var(--text2);word-break:break-all;background:var(--surface);padding:6px 8px;border-radius:6px;border:1px solid var(--border);">${id}</div>
+            <button class="btn-sortear" style="font-size:0.78rem;padding:0.4rem;" onclick="navigator.clipboard.writeText('${id}').then(()=>{this.textContent='✓ Copiado!';setTimeout(()=>this.textContent='📋 Copiar ID',1500)})">📋 Copiar ID</button>
+          </div>
+        </div>
+      </div>
     </div>`;
 
-  await _gerarQRCode('qrCodeBox', qrData);
+  await _gerarQRCode('qrCodeBox', qrData, 118);
 }
 
-async function _gerarQRCode(containerId, data) {
+async function _gerarQRCode(containerId, data, size = 160) {
   if (!window.QRCode) {
     await new Promise((res, rej) => {
       const s = document.createElement('script');
@@ -460,9 +471,10 @@ async function _gerarQRCode(containerId, data) {
   const el = document.getElementById(containerId);
   if (!el) return;
   el.innerHTML = '';
+  // Preto sobre branco — requisito para QR scanners funcionarem
   new window.QRCode(el, {
-    text: data, width: 164, height: 164,
-    colorDark: '#daa520', colorLight: '#1a1200',
+    text: data, width: size, height: size,
+    colorDark: '#000000', colorLight: '#ffffff',
   });
 }
 
@@ -562,12 +574,13 @@ async function _buscarLudoParaForm() {
   try {
     const data = await buscarUsuarioLudo(nick);
     const u = data?.usuario || data;
-    if (u?.id_usuario) {
-      document.getElementById('fjLudoId').value   = u.id_usuario;
+    // Checa nm_usuario (sempre presente) — id_usuario pode estar ausente dependendo do endpoint
+    if (u?.nm_usuario) {
+      document.getElementById('fjLudoId').value   = u.id_usuario || '';
       document.getElementById('fjLudoNick').value = u.nm_usuario || nick;
       if (!document.getElementById('fjNome').value.trim()) document.getElementById('fjNome').value = u.nm_usuario || nick;
       el.style.color = '#80d060';
-      el.textContent = `✓ ${u.nm_usuario} (ID: ${u.id_usuario})`;
+      el.textContent = `✓ ${u.nm_usuario}${u.id_usuario ? ' (ID: ' + u.id_usuario + ')' : ''}`;
     } else { el.style.color = '#f09080'; el.textContent = 'Usuário não encontrado na Ludopedia.'; }
   } catch { el.style.color = '#f09080'; el.textContent = 'Erro ao buscar na Ludopedia.'; }
 }

@@ -753,16 +753,12 @@
   /* Frame do QR Code */
   .perfil-qr-frame {
     flex-shrink: 0;
-    width: 130px; height: 130px;
     background: #fff;
     border-radius: 10px;
     padding: 6px;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.4);
   }
-  .perfil-qr-frame > div { width: 118px !important; height: 118px !important; }
-  .perfil-qr-frame canvas,
-  .perfil-qr-frame img { width: 118px !important; height: 118px !important; }
 
   .perfil-logout-btn {
     width: 100%;
