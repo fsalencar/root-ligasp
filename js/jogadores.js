@@ -3,6 +3,8 @@
 let _jogadoresCadastrados = [];
 // Por slot de sorteio: { ludopedia_id, ludopedia_usuario, jogador_id }
 const _playerLudoSlot = {};
+// Dados encontrados via ID/QR aguardando confirmação de nome por slot
+const _pendingSlotData = {};
 
 // ── CRUD Supabase ─────────────────────────────────────────────────────────────
 
@@ -169,6 +171,7 @@ function _filtrarPainelSlot(slotIdx, q) {
 function _selecionarJogadorSlot(slotIdx, jogadorId) {
   const j = _jogadoresCadastrados.find(x => x.id === jogadorId);
   if (!j) return;
+  // Define o jogador e fecha — o usuário pode editar o nome no input sem perder o link Ludopedia
   _setSlotJogador(slotIdx, j);
   _fecharPainelSlot();
 }
@@ -184,25 +187,18 @@ async function _adicionarPorId(slotIdx) {
   // Procura primeiro nos já carregados
   const local = _jogadoresCadastrados.find(j => j.id === idVal);
   if (local) {
-    _setSlotJogador(slotIdx, local);
-    statusEl.style.color = '#80d060';
-    statusEl.textContent = `✓ ${local.nome}`;
-    _fecharPainelSlot();
+    _mostrarConfirmacaoNome(slotIdx, local.nome, local.ludopedia_id, local.ludopedia_usuario, statusEl);
     return;
   }
 
-  // Busca via server (pode ser UUID de jogador ou de usuário do app)
+  // Busca via server (pode ser UUID de usuário do app)
   statusEl.style.color = 'var(--text3)';
   statusEl.textContent = 'Buscando...';
   try {
     const res  = await fetch('/api/lookup-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: idVal }) });
     const data = await res.json();
     if (res.ok && data.found) {
-      const jogador = { nome: data.nome, ludopedia_id: data.ludopedia_id, ludopedia_usuario: data.ludopedia_usuario };
-      _setSlotJogador(slotIdx, jogador);
-      statusEl.style.color = '#80d060';
-      statusEl.textContent = `✓ ${data.nome}${data.ludopedia_usuario ? ' 🎲 ' + data.ludopedia_usuario : ''}`;
-      setTimeout(() => _fecharPainelSlot(), 1000);
+      _mostrarConfirmacaoNome(slotIdx, data.nome, data.ludopedia_id, data.ludopedia_usuario, statusEl);
       return;
     }
     statusEl.style.color = '#f09080';
@@ -211,6 +207,40 @@ async function _adicionarPorId(slotIdx) {
     statusEl.style.color = '#f09080';
     statusEl.textContent = 'Erro: ' + e.message;
   }
+}
+
+function _mostrarConfirmacaoNome(slotIdx, nomeEncontrado, ludoId, ludoUsuario, statusEl) {
+  // Guarda dados Ludopedia pendentes para este slot
+  _pendingSlotData[slotIdx] = { ludopedia_id: ludoId || null, ludopedia_usuario: ludoUsuario || null };
+
+  statusEl.innerHTML = `
+    <div style="margin-top:4px;">
+      <div style="font-family:sans-serif;font-size:0.7rem;color:#80d060;margin-bottom:4px;">
+        ✓ Encontrado${ludoUsuario ? ': 🎲 ' + ludoUsuario : ''}
+      </div>
+      <label style="font-family:sans-serif;font-size:0.7rem;color:var(--text3);display:block;margin-bottom:3px;">Nome na liga:</label>
+      <div style="display:flex;gap:4px;">
+        <input id="slotConfirmNome_${slotIdx}" type="text" value="${nomeEncontrado}"
+          style="flex:1;font-size:0.8rem;padding:0.25rem 0.45rem;"
+          onkeydown="if(event.key==='Enter')_confirmarNomeSlot(${slotIdx})">
+        <button class="ludo-btn-sm" style="background:rgba(74,143,48,0.2);border-color:rgba(74,143,48,0.4);color:#80d060;" onclick="_confirmarNomeSlot(${slotIdx})">✓</button>
+      </div>
+    </div>`;
+
+  setTimeout(() => {
+    const inp = document.getElementById('slotConfirmNome_' + slotIdx);
+    if (inp) { inp.select(); }
+  }, 50);
+}
+
+function _confirmarNomeSlot(slotIdx) {
+  const inp  = document.getElementById('slotConfirmNome_' + slotIdx);
+  const nome = inp?.value?.trim();
+  if (!nome) return;
+  const ludo = _pendingSlotData[slotIdx] || {};
+  delete _pendingSlotData[slotIdx];
+  _setSlotJogador(slotIdx, { nome, ...ludo });
+  _fecharPainelSlot();
 }
 
 // ── Scanner QR ────────────────────────────────────────────────────────────────
@@ -274,11 +304,12 @@ async function _iniciarScannerQR(slotIdx) {
         _pararScannerQR();
         fecharGerenciarJogadores();
         // O QR pode ter um UUID direto ou uma URL com ?pid=
-        const match = code.data.match(/pid=([a-f0-9-]{36})|^([a-f0-9-]{36})$/);
-        const id = match ? (match[1] || match[2]) : code.data;
-        const inp = document.getElementById('slotIdInput_' + slotIdx) || _abrirInputIdExterno(slotIdx, id);
-        if (inp) inp.value = id;
-        _adicionarPorId(slotIdx);
+        const match = code.data.match(/pid=([a-f0-9-]{36})|^([a-f0-9-]{36})$/i);
+        const id = match ? (match[1] || match[2]) : code.data.trim();
+        // Reabre o painel do slot e dispara lookup com confirmação de nome
+        abrirPainelSlot(slotIdx);
+        const inp = document.getElementById('slotIdInput_' + slotIdx);
+        if (inp) { inp.value = id; _adicionarPorId(slotIdx); }
         return;
       }
       _qrAnimFrame = requestAnimationFrame(scan);

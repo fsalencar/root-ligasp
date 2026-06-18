@@ -89,7 +89,6 @@ function renderPlayersGrid() {
       <input type="text" class="player-name-input" id="playerName_${i}"
         placeholder="Nome do jogador ${i+1}"
         value="${existingNames[i] || ''}"
-        oninput="limparSlotLudo(${i})"
         autocomplete="off">
       <div class="player-slot-badge" id="playerSlotBadge_${i}"></div>
       <div class="player-fac-select">
