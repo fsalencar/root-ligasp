@@ -250,24 +250,54 @@ async function initLudopedia() {
     _pendingLudoCode = null;
     localStorage.removeItem('ludo_connecting');
     renderLudopediaConnecting();
-    try {
-      const res = await fetch('/api/ludopedia-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error || 'Falha na autenticação');
-      console.log('Ludopedia token response:', d);
-      ludoToken = d.access_token || d.token || d.accessToken;
-      if (!ludoToken) throw new Error('access_token não encontrado na resposta: ' + JSON.stringify(d));
-          localStorage.setItem('ludo_token', ludoToken);
-      try { await carregarPerfilLudo(); } catch (e) { console.warn('Perfil não carregado:', e.message); }
-      await salvarTokenLudo(ludoToken);
-    } catch (e) {
-      console.error('Erro Ludopedia OAuth:', e);
+
+    const jaLogado = typeof currentUser !== 'undefined' && currentUser;
+
+    if (jaLogado) {
+      // Já tem sessão Google → só adiciona o token Ludopedia à conta existente
+      try {
+        const res = await fetch('/api/ludopedia-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code }),
+        });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.error || 'Falha');
+        ludoToken = d.access_token || d.token;
+        if (!ludoToken) throw new Error('Token não recebido');
+        localStorage.setItem('ludo_token', ludoToken);
+        try { await carregarPerfilLudo(); } catch (e) { console.warn('Perfil:', e.message); }
+        await salvarTokenLudo(ludoToken);
+      } catch (e) { console.error('Erro Ludopedia (já logado):', e); }
+      renderLudopediaStatus();
+    } else {
+      // Sem sessão → cria sessão Supabase via Ludopedia
+      try {
+        const res = await fetch('/api/ludopedia-auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code }),
+        });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.error || 'Falha na autenticação');
+
+        ludoToken = d.ludo_token;
+        ludoUser  = { usuario: d.usuario, nm_usuario: d.usuario, id_usuario: d.id_usuario, thumb: d.thumb };
+        localStorage.setItem('ludo_token', ludoToken);
+
+        // Cria sessão Supabase — dispara SIGNED_IN → renderAuthUI, carregarHistorico, etc.
+        const sb = await initSupabase();
+        const { error } = await sb.auth.verifyOtp({
+          token_hash: d.otp_token,
+          type: 'magiclink',
+        });
+        if (error) throw error;
+        // A partir daqui o SIGNED_IN cuida do resto
+      } catch (e) {
+        console.error('Erro Ludopedia auth:', e);
+        renderLudopediaStatus();
+      }
     }
-    renderLudopediaStatus();
     return;
   }
 
@@ -276,6 +306,7 @@ async function initLudopedia() {
   if (local) {
     ludoToken = local;
     try { await carregarPerfilLudo(); } catch (e) { console.warn('Perfil Ludopedia indisponível:', e.message); }
+    await salvarTokenLudo(ludoToken); // Persiste no Supabase se estiver logado
     renderLudopediaStatus();
     return;
   }
