@@ -5,18 +5,26 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { email } = req.body || {};
-  if (!email) return res.status(400).json({ error: 'Missing email' });
+  const { email, user_id } = req.body || {};
+  if (!email && !user_id) return res.status(400).json({ error: 'Missing email or user_id' });
 
   const BASE    = process.env.SUPABASE_URL;
   const SRK     = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const headers = { 'apikey': SRK, 'Authorization': `Bearer ${SRK}`, 'Content-Type': 'application/json' };
 
   try {
-    // Busca usuário por email via admin API
-    const listRes = await fetch(`${BASE}/auth/v1/admin/users?page=1&per_page=50`, { headers });
-    const listData = await listRes.json();
-    const user = (listData.users || []).find(u => u.email?.toLowerCase() === email.toLowerCase());
+    let user;
+    if (user_id) {
+      // Busca diretamente pelo UUID
+      const r = await fetch(`${BASE}/auth/v1/admin/users/${user_id}`, { headers });
+      if (!r.ok) return res.json({ found: false });
+      user = await r.json();
+    } else {
+      // Busca por email
+      const listRes = await fetch(`${BASE}/auth/v1/admin/users?page=1&per_page=50`, { headers });
+      const listData = await listRes.json();
+      user = (listData.users || []).find(u => u.email?.toLowerCase() === email.toLowerCase());
+    }
     if (!user) return res.json({ found: false });
 
     const nome = user.user_metadata?.full_name || email.split('@')[0];

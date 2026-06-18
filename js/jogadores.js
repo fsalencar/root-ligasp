@@ -113,35 +113,25 @@ function _clickForaPainel(e) {
 }
 
 function _renderConteudoPainel(slotIdx) {
-  const temCadastrados = _jogadoresCadastrados.length > 0;
+  const temCadastrado = _jogadoresCadastrados.length > 0;
   const logado = typeof currentUser !== 'undefined' && currentUser;
 
-  const lista = temCadastrados ? `
+  const listaHtml = temCadastrado ? `
     <div style="font-size:0.72rem;color:var(--text3);font-family:sans-serif;margin-bottom:4px;letter-spacing:0.04em;">JOGADORES CADASTRADOS</div>
     <input type="text" placeholder="Pesquisar..." class="slot-painel-search"
       oninput="_filtrarPainelSlot(${slotIdx}, this.value)" style="margin-bottom:6px;">
     <div id="slotPainelLista_${slotIdx}" class="slot-painel-lista">
       ${_renderListaPainel(slotIdx, _jogadoresCadastrados)}
-    </div>` : '';
-
-  const semCadastro = !temCadastrado && logado ? `
-    <div style="font-size:0.75rem;color:var(--text3);font-family:sans-serif;text-align:center;padding:0.5rem 0;">
-      Nenhum jogador cadastrado ainda.
     </div>` : (!logado ? `
     <div style="font-size:0.75rem;color:var(--text3);font-family:sans-serif;text-align:center;padding:0.5rem 0;">
       Faça login para usar jogadores cadastrados.
-    </div>` : '');
-
-  const temCadastrado = _jogadoresCadastrados.length > 0;
+    </div>` : `
+    <div style="font-size:0.75rem;color:var(--text3);font-family:sans-serif;text-align:center;padding:0.5rem 0;">
+      Nenhum jogador cadastrado ainda.
+    </div>`);
 
   return `
-    ${temCadastrado ? lista : (!logado ? `
-      <div style="font-size:0.75rem;color:var(--text3);font-family:sans-serif;text-align:center;padding:0.5rem 0;">
-        Faça login para usar jogadores cadastrados.
-      </div>` : `
-      <div style="font-size:0.75rem;color:var(--text3);font-family:sans-serif;text-align:center;padding:0.5rem 0;">
-        Nenhum jogador cadastrado ainda.
-      </div>`)}
+    ${listaHtml}
     <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:8px;display:flex;flex-direction:column;gap:6px;">
       <div style="font-size:0.72rem;color:var(--text3);font-family:sans-serif;letter-spacing:0.04em;">ADICIONAR POR ID / QR CODE</div>
       <div style="display:flex;gap:6px;">
@@ -201,25 +191,22 @@ async function _adicionarPorId(slotIdx) {
     return;
   }
 
-  // Busca no Supabase por qualquer usuário (sem RLS → precisa login)
+  // Busca via server (pode ser UUID de jogador ou de usuário do app)
   statusEl.style.color = 'var(--text3)';
   statusEl.textContent = 'Buscando...';
   try {
-    const sb = await initSupabase();
-    const { data } = await sb.from('jogadores').select('*').eq('id', idVal).maybeSingle();
-    if (data) {
-      _setSlotJogador(slotIdx, data);
+    const res  = await fetch('/api/lookup-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: idVal }) });
+    const data = await res.json();
+    if (res.ok && data.found) {
+      const jogador = { nome: data.nome, ludopedia_id: data.ludopedia_id, ludopedia_usuario: data.ludopedia_usuario };
+      _setSlotJogador(slotIdx, jogador);
       statusEl.style.color = '#80d060';
-      statusEl.textContent = `✓ ${data.nome}`;
-      // Adiciona ao cache local se não estava
-      if (!_jogadoresCadastrados.find(j => j.id === data.id)) {
-        _jogadoresCadastrados.push(data);
-      }
-      setTimeout(() => _fecharPainelSlot(), 800);
-    } else {
-      statusEl.style.color = '#f09080';
-      statusEl.textContent = 'Jogador não encontrado.';
+      statusEl.textContent = `✓ ${data.nome}${data.ludopedia_usuario ? ' 🎲 ' + data.ludopedia_usuario : ''}`;
+      setTimeout(() => _fecharPainelSlot(), 1000);
+      return;
     }
+    statusEl.style.color = '#f09080';
+    statusEl.textContent = 'ID não encontrado.';
   } catch (e) {
     statusEl.style.color = '#f09080';
     statusEl.textContent = 'Erro: ' + e.message;

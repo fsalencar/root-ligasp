@@ -97,19 +97,95 @@ function renderAuthUI() {
   if (!btn) return;
 
   if (currentUser) {
-    const nome = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Usuário';
+    const nome   = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Usuário';
     const avatar = currentUser.user_metadata?.avatar_url;
+    const ludoNome = (typeof ludoUser !== 'undefined') ? (ludoUser?.usuario || ludoUser?.nm_usuario) : null;
+    const temLudo  = (typeof ludoToken !== 'undefined') && ludoToken;
+
     btn.style.display = 'none';
     userInfo.style.display = 'flex';
     userInfo.innerHTML = `
-      ${avatar ? `<img src="${avatar}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">` : '<span style="font-size:1.2rem">👤</span>'}
-      <span style="font-size:0.82rem;color:var(--text2);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nome}</span>
-      <button onclick="logout()" style="background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text3);font-size:0.72rem;padding:3px 8px;cursor:pointer;">Sair</button>
+      <button onclick="abrirModalPerfil()" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;padding:0;max-width:160px;" title="Ver perfil">
+        <div style="position:relative;flex-shrink:0;">
+          ${avatar
+            ? `<img src="${avatar}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid var(--border);">`
+            : `<div style="width:30px;height:30px;border-radius:50%;background:var(--surface2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1rem;">👤</div>`}
+          ${temLudo ? `<span style="position:absolute;bottom:-2px;right:-2px;width:13px;height:13px;background:#3a8a28;border-radius:50%;border:2px solid var(--surface);font-size:0.45rem;display:flex;align-items:center;justify-content:center;">🎲</span>` : ''}
+        </div>
+        <span style="font-size:0.82rem;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nome}</span>
+      </button>
+      <button onclick="logout()" style="background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text3);font-size:0.72rem;padding:3px 8px;cursor:pointer;flex-shrink:0;">Sair</button>
     `;
   } else {
     btn.style.display = 'flex';
     userInfo.style.display = 'none';
     userInfo.innerHTML = '';
+  }
+}
+
+// ── Modal de perfil ──────────────────────────────────────────────
+async function abrirModalPerfil() {
+  const modal = document.getElementById('modalJogadores');
+  if (!modal || !currentUser) return;
+
+  const nome   = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Usuário';
+  const avatar = currentUser.user_metadata?.avatar_url;
+  const email  = currentUser.email || '';
+  const userId = currentUser.id;
+  const temLudo   = (typeof ludoToken !== 'undefined') && ludoToken;
+  const ludoNome  = temLudo ? ((typeof ludoUser !== 'undefined') ? (ludoUser?.usuario || ludoUser?.nm_usuario || '—') : '—') : null;
+  const ludoIdNum = (typeof ludoUser !== 'undefined') ? ludoUser?.id_usuario : null;
+
+  modal.style.display = 'flex';
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:360px;width:95%;text-align:center;">
+      <div class="modal-header" style="justify-content:flex-end;">
+        <button onclick="fecharGerenciarJogadores()" class="modal-close-btn">×</button>
+      </div>
+
+      <!-- Avatar -->
+      <div style="position:relative;display:inline-block;margin-bottom:0.75rem;">
+        ${avatar
+          ? `<img src="${avatar}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid var(--border);">`
+          : `<div style="width:72px;height:72px;border-radius:50%;background:var(--surface2);border:3px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto;">👤</div>`}
+      </div>
+      <div style="font-size:1.05rem;font-weight:600;color:var(--text1);margin-bottom:2px;">${nome}</div>
+      <div style="font-size:0.75rem;color:var(--text3);font-family:sans-serif;margin-bottom:1rem;">${email}</div>
+
+      <!-- Ludopedia -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem;margin-bottom:0.75rem;text-align:left;">
+        <div style="font-size:0.7rem;color:var(--text3);font-family:sans-serif;letter-spacing:0.05em;margin-bottom:6px;">LUDOPEDIA</div>
+        ${temLudo ? `
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:1.2rem;">🎲</span>
+            <div style="flex:1;">
+              <div style="font-family:sans-serif;font-size:0.88rem;color:#80d060;font-weight:600;">${ludoNome}</div>
+              ${ludoIdNum ? `<div style="font-family:sans-serif;font-size:0.7rem;color:var(--text3);">ID: ${ludoIdNum}</div>` : ''}
+            </div>
+            <button class="ludo-btn-sm" style="color:#f09080;border-color:rgba(240,144,128,0.3);" onclick="desconectarLudopedia();fecharGerenciarJogadores();">Desconectar</button>
+          </div>` : `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <span style="font-family:sans-serif;font-size:0.82rem;color:var(--text3);">Não conectado</span>
+            <button class="ludo-btn-sm" onclick="fecharGerenciarJogadores();conectarLudopedia();">Conectar</button>
+          </div>`}
+      </div>
+
+      <!-- QR Code do perfil -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem;margin-bottom:0.75rem;">
+        <div style="font-size:0.7rem;color:var(--text3);font-family:sans-serif;letter-spacing:0.05em;margin-bottom:8px;">MEU QR CODE</div>
+        <div id="perfilQRBox" style="margin:0 auto;width:164px;height:164px;"></div>
+        <div style="font-family:sans-serif;font-size:0.72rem;color:var(--text3);margin-top:6px;line-height:1.4;">
+          Compartilhe para ser adicionado em partidas
+        </div>
+        <button class="ludo-btn-sm" style="margin-top:6px;" onclick="navigator.clipboard.writeText('${userId}').then(()=>this.textContent='✓ Copiado!').catch(()=>this.textContent='ID: ${userId.slice(0,8)}...')">Copiar meu ID</button>
+      </div>
+
+      <button onclick="logout();fecharGerenciarJogadores();" style="background:transparent;border:1px solid var(--border);border-radius:var(--radius);color:var(--text3);font-size:0.82rem;padding:0.4rem 1rem;cursor:pointer;width:100%;">Sair da conta</button>
+    </div>`;
+
+  // Gera QR Code com o ID do usuário
+  if (typeof _gerarQRCode === 'function') {
+    await _gerarQRCode('perfilQRBox', `https://root-ligasp.vercel.app/?pid=${userId}`);
   }
 }
 

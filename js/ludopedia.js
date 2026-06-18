@@ -196,6 +196,17 @@ function renderLudopediaStatus() {
   const el = document.getElementById('ludopediaStatus');
   if (!el) return;
 
+  const logado = typeof currentUser !== 'undefined' && currentUser;
+
+  if (logado) {
+    // Quando logado, o status Ludopedia fica dentro do modal de perfil
+    // Apenas atualiza o badge no avatar do header
+    el.innerHTML = '';
+    if (typeof renderAuthUI === 'function') renderAuthUI();
+    return;
+  }
+
+  // Não logado: mostra botão de conexão Ludopedia no header
   if (ludoToken) {
     const nome = ludoUser?.usuario || ludoUser?.nm_usuario || '—';
     el.innerHTML = `
