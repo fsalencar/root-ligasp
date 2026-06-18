@@ -54,18 +54,14 @@ module.exports = async function handler(req, res) {
     const actionLink = sbData.action_link;
     if (!actionLink) return res.status(500).json({ error: 'action_link não retornado', raw: sbData });
 
-    // Extrai o token raw da URL (não o hashed_token — o verifyOtp precisa do raw)
-    const linkUrl = new URL(actionLink);
-    const rawToken = linkUrl.searchParams.get('token');
-    if (!rawToken) return res.status(500).json({ error: 'Token não encontrado no action_link', action_link: actionLink });
-
+    // Retorna o action_link completo — o frontend redireciona para ele
+    // Isso evita problemas de PKCE: o Supabase processa o próprio link e volta já com sessão
     return res.json({
-      ludo_token:   ludoToken,
-      otp_token:    rawToken,
-      email:        `ludopedia_${id_usuario}@ligasp.internal`,
+      ludo_token:  ludoToken,
+      action_link: actionLink,
       usuario,
       id_usuario,
-      thumb:        thumb || null,
+      thumb:       thumb || null,
     });
   } catch (e) {
     return res.status(500).json({ error: e.message });

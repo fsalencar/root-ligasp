@@ -281,19 +281,13 @@ async function initLudopedia() {
         const d = await res.json();
         if (!res.ok) throw new Error(d.error || 'Falha na autenticação');
 
-        ludoToken = d.ludo_token;
-        ludoUser  = { usuario: d.usuario, nm_usuario: d.usuario, id_usuario: d.id_usuario, thumb: d.thumb };
-        localStorage.setItem('ludo_token', ludoToken);
+        // Salva token e perfil no localStorage antes de redirecionar
+        localStorage.setItem('ludo_token', d.ludo_token);
+        localStorage.setItem('ludo_nm_usuario', d.usuario || '');
 
-        // Cria sessão Supabase — dispara SIGNED_IN → renderAuthUI, carregarHistorico, etc.
-        const sb = await initSupabase();
-        const { error } = await sb.auth.verifyOtp({
-          email: d.email,
-          token: d.otp_token,
-          type: 'magiclink',
-        });
-        if (error) throw error;
-        // A partir daqui o SIGNED_IN cuida do resto
+        // Redireciona para o magic link do Supabase — ele processa e volta pro app já logado
+        // (evita problemas de PKCE ao chamar verifyOtp manualmente)
+        window.location.href = d.action_link;
       } catch (e) {
         console.error('Erro Ludopedia auth:', e);
         renderLudopediaStatus();
@@ -306,6 +300,8 @@ async function initLudopedia() {
   const local = localStorage.getItem('ludo_token');
   if (local) {
     ludoToken = local;
+    const savedNome = localStorage.getItem('ludo_nm_usuario');
+    if (savedNome) ludoUser = { usuario: savedNome, nm_usuario: savedNome };
     try { await carregarPerfilLudo(); } catch (e) { console.warn('Perfil Ludopedia indisponível:', e.message); }
     await salvarTokenLudo(ludoToken); // Persiste no Supabase se estiver logado
     renderLudopediaStatus();
