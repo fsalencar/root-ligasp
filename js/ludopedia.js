@@ -72,10 +72,12 @@ async function carregarPerfilLudo() {
 async function buscarUsuarioLudo(nmUsuario) {
   // A API retorna lista paginada — filtra por nm_usuario e busca correspondência exata
   const data = await ludoFetch(`usuarios?nm_usuario=${encodeURIComponent(nmUsuario)}&rows=50`);
+  console.log('[Ludo buscarUsuario] total:', data?.total, '| primeiros:', (data?.usuarios||[]).slice(0,3).map(u=>u.usuario));
   if (Array.isArray(data?.usuarios)) {
     const lc = nmUsuario.toLowerCase().trim();
-    // Tenta match exato, depois match sem espaços (API às vezes retorna " BBCVSFD" com espaço)
-    return data.usuarios.find(u => (u.usuario || '').toLowerCase().trim() === lc) || null;
+    const found = data.usuarios.find(u => (u.usuario || '').toLowerCase().trim() === lc);
+    console.log('[Ludo buscarUsuario] buscando:', lc, '| encontrado:', found?.usuario ?? 'não');
+    return found || null;
   }
   return null;
 }
