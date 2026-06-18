@@ -28,7 +28,7 @@ function conectarLudopedia() {
     client_id: LUDO_CLIENT_ID,
     redirect_uri: LUDO_REDIRECT,
   });
-  window.location.href = `https://ludopedia.com.br/oauth2?${params}`;
+  window.location.href = `https://ludopedia.com.br/api/oauth2?${params}`;
 }
 
 async function desconectarLudopedia() {

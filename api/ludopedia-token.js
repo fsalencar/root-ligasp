@@ -18,7 +18,7 @@ module.exports = async function handler(req, res) {
       client_secret: process.env.LUDOPEDIA_CLIENT_SECRET,
     });
 
-    const response = await fetch('https://ludopedia.com.br/oauth2/token', {
+    const response = await fetch('https://ludopedia.com.br/api/oauth2/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params.toString(),
