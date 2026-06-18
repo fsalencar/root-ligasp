@@ -288,7 +288,8 @@ async function initLudopedia() {
         // Cria sessão Supabase — dispara SIGNED_IN → renderAuthUI, carregarHistorico, etc.
         const sb = await initSupabase();
         const { error } = await sb.auth.verifyOtp({
-          token_hash: d.otp_token,
+          email: d.email,
+          token: d.otp_token,
           type: 'magiclink',
         });
         if (error) throw error;
