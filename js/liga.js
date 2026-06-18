@@ -426,9 +426,9 @@ function gerarResultadoLiga() {
   // Finaliza partida em andamento com os dados do resultado
   if (typeof finalizarPartida === 'function') finalizarPartida(jogadoresFinais);
 
-  // Ludopedia — botão registrar
-  if (typeof mostrarBotaoLudo === 'function') {
-    mostrarBotaoLudo({ local, data: dataVal, mapa, jogadores: jogadoresFinais }, 'ludoBtnContainerLiga');
+  // Ludopedia — registro automático ao gerar resultado
+  if (typeof autoRegistrarLudo === 'function') {
+    autoRegistrarLudo({ local, data: dataVal, mapa, jogadores: jogadoresFinais }, 'ludoBtnContainerLiga');
   }
 }
 

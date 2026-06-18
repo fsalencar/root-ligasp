@@ -202,30 +202,28 @@ function renderLudopediaStatus() {
 
 // ── UI — botão registrar partida ──────────────────────────────────────────────
 
-function mostrarBotaoLudo(resultado, containerId) {
+async function autoRegistrarLudo(resultado, containerId) {
   _ultimoResultadoLudo = resultado;
   const el = document.getElementById(containerId);
   if (!el) return;
   if (!ludoToken) { el.innerHTML = ''; return; }
-  el.innerHTML = `
-    <button class="ludo-btn-registrar" onclick="executarRegistroLudo(this)">
-      🎲 Registrar partida na Ludopedia
-    </button>`;
+
+  el.innerHTML = `<div class="ludo-auto-status">⏳ Registrando na Ludopedia...</div>`;
+
+  try {
+    await registrarPartidaLudo(resultado);
+    el.innerHTML = `<div class="ludo-auto-status success">🎲 Registrado na Ludopedia!</div>`;
+  } catch (e) {
+    el.innerHTML = `
+      <div class="ludo-auto-status error">
+        ⚠ Ludopedia: ${e.message}
+        <button class="ludo-btn-sm" style="margin-left:8px;" onclick="tentarRegistroLudoNovamente('${containerId}')">Tentar novamente</button>
+      </div>`;
+  }
 }
 
-async function executarRegistroLudo(btn) {
-  if (!_ultimoResultadoLudo) return;
-  btn.disabled = true;
-  btn.textContent = '⏳ Registrando...';
-  try {
-    await registrarPartidaLudo(_ultimoResultadoLudo);
-    btn.textContent = '✓ Registrado na Ludopedia!';
-    btn.className = 'ludo-btn-registrar success';
-  } catch (e) {
-    btn.textContent = '⚠ ' + e.message;
-    btn.className = 'ludo-btn-registrar error';
-    btn.disabled = false;
-  }
+async function tentarRegistroLudoNovamente(containerId) {
+  if (_ultimoResultadoLudo) await autoRegistrarLudo(_ultimoResultadoLudo, containerId);
 }
 
 // ── UI — buscar usuário (para campos de jogador) ──────────────────────────────

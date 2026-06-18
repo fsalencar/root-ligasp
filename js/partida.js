@@ -451,10 +451,9 @@ function gerarResultadoPartida() {
   const section = document.getElementById('tab-partida');
   if (section) renderResultadoPartida(section);
 
-  // Ludopedia — botão registrar
-  if (typeof mostrarBotaoLudo === 'function') {
-    // Passa resultado para mostrar após o render (o container só existe depois do render)
-    setTimeout(() => mostrarBotaoLudo(resultado, 'ludoBtnContainerPartida'), 50);
+  // Ludopedia — registro automático ao finalizar partida
+  if (typeof autoRegistrarLudo === 'function') {
+    setTimeout(() => autoRegistrarLudo(resultado, 'ludoBtnContainerPartida'), 50);
   }
 }
 
