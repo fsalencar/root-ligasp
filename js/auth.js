@@ -25,9 +25,11 @@ async function initSupabase() {
       hideAuthModal();
       if (typeof restoreTabFromHash === 'function') restoreTabFromHash();
       if (typeof carregarHistorico === 'function') carregarHistorico();
+      if (typeof initLudopedia === 'function') initLudopedia();
     }
     if (event === 'SIGNED_OUT') {
       if (typeof renderHistoricoLogout === 'function') renderHistoricoLogout();
+      if (typeof renderLudopediaStatus === 'function') renderLudopediaStatus();
     }
   });
 
@@ -78,15 +80,12 @@ async function logout() {
   await sb.auth.signOut();
 }
 
-// Detecta retorno de redirect OAuth e exibe loading state
+// Detecta retorno de redirect OAuth do Supabase (não da Ludopedia)
 (function () {
-  if (new URLSearchParams(window.location.search).has('code')) {
+  const p = new URLSearchParams(window.location.search);
+  if (p.has('code') && !localStorage.getItem('ludo_connecting')) {
     const btn = document.getElementById('authBtn');
-    if (btn) {
-      btn.textContent = '⏳ Conectando...';
-      btn.disabled = true;
-      btn.style.opacity = '0.7';
-    }
+    if (btn) { btn.textContent = '⏳ Conectando...'; btn.disabled = true; btn.style.opacity = '0.7'; }
   }
 })();
 

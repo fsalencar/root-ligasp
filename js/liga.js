@@ -416,15 +416,19 @@ function gerarResultadoLiga() {
   document.getElementById('btnCopiar').textContent = '📋 Copiar';
   document.getElementById('btnCopiar').className = 'btn-copiar';
   document.getElementById('ligaResultBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const jogadoresFinais = sorted.map((p, i) => ({
+    nome: p.name, faccao: p.facName,
+    pontuacao: p.vitDom ? null : (p.derDomFlag ? null : p.score),
+    vencedor: i === 0 && !p.derDomFlag,
+    iniciante: p.iniciante,
+  }));
+
   // Finaliza partida em andamento com os dados do resultado
-  if (typeof finalizarPartida === 'function') {
-    const jogadoresFinais = sorted.map(p => ({
-      nome: p.name, faccao: p.facName,
-      pontuacao: p.vitDom ? null : (p.derDomFlag ? null : p.score),
-      vencedor: sorted.indexOf(p) === 0 && !p.derDomFlag,
-      iniciante: p.iniciante,
-    }));
-    finalizarPartida(jogadoresFinais);
+  if (typeof finalizarPartida === 'function') finalizarPartida(jogadoresFinais);
+
+  // Ludopedia — botão registrar
+  if (typeof mostrarBotaoLudo === 'function') {
+    mostrarBotaoLudo({ local, data: dataVal, mapa, jogadores: jogadoresFinais }, 'ludoBtnContainerLiga');
   }
 }
 
@@ -458,6 +462,7 @@ init();
 sbLoadCounters();
 initSupabase();
 restaurarPartidaSeExistir();
+if (typeof initLudopedia === 'function') initLudopedia();
 
 // Define hash inicial se não houver nenhum (e não estiver em callback OAuth)
 if (!window.location.hash && !window.location.search.includes('code=')) {

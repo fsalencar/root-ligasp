@@ -596,6 +596,117 @@
     flex-shrink: 0;
   }
 
+  /* ===== LUDOPEDIA ===== */
+  .ludo-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    white-space: nowrap;
+  }
+  .ludo-status.connected { border-color: rgba(74,143,48,0.45); }
+  .ludo-icon { font-size: 1rem; line-height: 1; flex-shrink: 0; }
+  .ludo-info { display: flex; flex-direction: column; gap: 0; min-width: 0; }
+  .ludo-label { font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); font-family: sans-serif; }
+  .ludo-nome { font-size: 0.78rem; color: var(--text2); font-family: sans-serif; overflow: hidden; text-overflow: ellipsis; }
+
+  .ludo-btn-sm {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text3);
+    font-size: 0.68rem;
+    padding: 2px 7px;
+    cursor: pointer;
+    font-family: sans-serif;
+    white-space: nowrap;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .ludo-btn-sm:hover { border-color: var(--border2); color: var(--text); }
+
+  .ludo-btn-connect {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: var(--radius);
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    font-family: sans-serif;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .ludo-btn-connect:hover { border-color: rgba(74,143,48,0.6); color: #80d060; }
+
+  .ludo-btn-registrar {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: var(--surface2);
+    color: #80d060;
+    border: 1px solid rgba(74,143,48,0.4);
+    border-radius: var(--radius-lg);
+    font-family: Georgia, serif;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 0.75rem;
+  }
+  .ludo-btn-registrar:hover:not(:disabled) { background: rgba(74,143,48,0.1); }
+  .ludo-btn-registrar:disabled { opacity: 0.7; cursor: default; }
+  .ludo-btn-registrar.success { color: #80d060; background: rgba(74,143,48,0.12); cursor: default; border-color: rgba(74,143,48,0.5); }
+  .ludo-btn-registrar.error   { color: #f09080; border-color: rgba(200,64,40,0.35); background: rgba(200,64,40,0.06); }
+
+  .ludo-user-found {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    color: #80d060;
+    font-family: sans-serif;
+    margin-top: 4px;
+  }
+
+  .ludo-nick-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .ludo-nick-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px 8px;
+    color: var(--text2);
+    font-family: sans-serif;
+    font-size: 0.78rem;
+    min-width: 0;
+  }
+  .ludo-nick-input:focus { outline: none; border-color: rgba(74,143,48,0.5); }
+  .ludo-nick-input::placeholder { color: var(--text3); }
+  .ludo-nick-btn {
+    background: transparent;
+    border: 1px solid rgba(74,143,48,0.4);
+    border-radius: 6px;
+    color: #80d060;
+    font-size: 0.72rem;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-family: sans-serif;
+    white-space: nowrap;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .ludo-nick-btn:hover { background: rgba(74,143,48,0.1); }
+
   /* ===== HISTÓRICO ===== */
   .hist-card {
     background: var(--surface2);
