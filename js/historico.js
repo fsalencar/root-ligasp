@@ -126,7 +126,7 @@ function renderCardLudoPartida(p) {
         }).join('')}
       </div>
       <div style="margin-top:10px;">
-        <a href="https://ludopedia.com.br/partida/${p.id_partida}" target="_blank"
+        <a href="https://ludopedia.com.br/partida?id_partida=${p.id_partida}" target="_blank"
            class="btn-copiar" style="display:inline-block;text-decoration:none;font-size:0.75rem;">
           🎲 Ver na Ludopedia ↗
         </a>
