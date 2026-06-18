@@ -75,34 +75,60 @@ async function carregarHistoricoLudopedia(section) {
   }
 }
 
+function _parseLudoObs(obs) {
+  if (!obs) return '';
+  // Ludopedia guarda dados internos como "_ldh_id_{json}" — extrai só a facção
+  if (obs.startsWith('_ldh_id_')) {
+    try {
+      const d = JSON.parse(obs.slice(8));
+      return d['facção'] || d.faccao || '';
+    } catch { return ''; }
+  }
+  return obs;
+}
+
+function _nomeExibicaoLudo(j) {
+  // Prefere o nome real dentro do JSON interno, senão usa j.nome
+  if (j.observacao && j.observacao.startsWith('_ldh_id_')) {
+    try {
+      const d = JSON.parse(j.observacao.slice(8));
+      if (d.nome) return d.nome;
+    } catch {}
+  }
+  return j.nome || '—';
+}
+
 function renderCardLudoPartida(p) {
   const jogadores = p.jogadores || [];
   const vencedor  = jogadores.find(j => j.fl_vencedor === 1);
 
-  const parts = (p.dt_partida || '').split('-');
+  const parts   = (p.dt_partida || '').split('-');
   const dataStr = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : '';
   const durStr  = p.duracao ? `⏱ ${p.duracao}min` : '';
+
+  const nomeVenc   = vencedor ? _nomeExibicaoLudo(vencedor) : '';
+  const faccaoVenc = vencedor ? _parseLudoObs(vencedor.observacao) : '';
 
   return `
     <div class="hist-card ludo-hist-card">
       <div class="hist-card-header">
-        <span class="hist-local" style="display:flex;align-items:center;gap:5px;">
-          <span style="font-size:0.7rem;opacity:.6;font-family:sans-serif;">LUDOPEDIA</span>
-        </span>
+        <span class="hist-local">🎲 Ludopedia</span>
         <span class="hist-data">${dataStr}${durStr ? ' · ' + durStr : ''}</span>
       </div>
-      ${vencedor ? `<div class="hist-vencedor">🏆 ${vencedor.nome}${vencedor.observacao ? ' — ' + vencedor.observacao : ''}</div>` : ''}
+      ${vencedor ? `<div class="hist-vencedor">🏆 ${nomeVenc}${faccaoVenc ? ' — ' + faccaoVenc : ''}</div>` : ''}
       <div class="hist-jogadores">
-        ${jogadores.map(j => `
-          <span class="hist-jogador${j.fl_vencedor ? ' hist-vencedor-tag' : ''}">
-            ${j.nome}${j.observacao ? ' · ' + j.observacao : ''}${j.vl_pontos != null ? ' · ' + j.vl_pontos + 'pts' : ''}
-          </span>
-        `).join('')}
+        ${jogadores.map(j => {
+          const nome   = _nomeExibicaoLudo(j);
+          const faccao = _parseLudoObs(j.observacao);
+          return `<span class="hist-jogador${j.fl_vencedor ? ' hist-vencedor-tag' : ''}">
+            ${nome}${faccao ? ' · ' + faccao : ''}${j.vl_pontos != null ? ' · ' + j.vl_pontos + 'pts' : ''}
+          </span>`;
+        }).join('')}
       </div>
-      <div style="margin-top:8px;">
+      <div style="margin-top:10px;">
         <a href="https://ludopedia.com.br/partida/${p.id_partida}" target="_blank"
-           style="font-size:0.72rem;color:var(--text3);font-family:sans-serif;text-decoration:none;">
-          Ver na Ludopedia ↗
+           class="btn-copiar" style="display:inline-block;text-decoration:none;font-size:0.75rem;">
+          🎲 Ver na Ludopedia ↗
         </a>
       </div>
     </div>`;
