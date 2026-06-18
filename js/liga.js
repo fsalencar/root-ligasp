@@ -21,7 +21,10 @@ const VAGABOND_TYPES = [
   'Patife','Ronin','Saqueador','Vagabundo',
 ];
 
-function switchTab(tab, btn) {
+const VALID_TABS = ['sorteio', 'partida', 'mapa', 'liga', 'historico'];
+
+// Ativa a aba sem tocar no histórico do browser (restauração e popstate)
+function _activateTab(tab, btn) {
   document.querySelectorAll('.liga-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.liga-tab').forEach(b => b.classList.remove('active'));
   const section = document.getElementById('tab-' + tab);
@@ -29,19 +32,36 @@ function switchTab(tab, btn) {
   section.classList.add('active');
   btn.classList.add('active');
   localStorage.setItem('ligaActiveTab', tab);
+  if (tab !== 'partida' && typeof stopTimer === 'function') stopTimer();
   if (tab === 'liga') initLiga();
   if (tab === 'mapa') initMapaOnly();
-  if (tab !== 'partida' && typeof stopTimer === 'function') stopTimer();
   if (tab === 'partida' && typeof renderPartida === 'function') renderPartida();
   if (tab === 'historico' && typeof carregarHistorico === 'function') carregarHistorico();
 }
 
-function restoreTabFromHash() {
-  const saved = localStorage.getItem('ligaActiveTab');
-  if (!saved || saved === 'sorteio') return;
-  const btn = document.querySelector(`.liga-tab[data-tab="${saved}"]`);
-  if (btn) switchTab(saved, btn);
+// Chamado pelos botões no HTML — atualiza a URL e ativa a aba
+function switchTab(tab, btn) {
+  history.pushState({ tab }, '', '#' + tab);
+  _activateTab(tab, btn);
 }
+
+// Restaura aba a partir do hash da URL ou do localStorage
+function restoreTabFromHash() {
+  const hash = window.location.hash.replace('#', '').trim();
+  const tab = (hash && VALID_TABS.includes(hash)) ? hash
+    : (localStorage.getItem('ligaActiveTab') || 'sorteio');
+  if (tab === 'sorteio') return;
+  const btn = document.querySelector(`.liga-tab[data-tab="${tab}"]`);
+  if (btn) _activateTab(tab, btn);
+}
+
+// Botões voltar/avançar do browser
+window.addEventListener('popstate', () => {
+  const hash = window.location.hash.replace('#', '').trim();
+  const tab = (hash && VALID_TABS.includes(hash)) ? hash : 'sorteio';
+  const btn = document.querySelector(`.liga-tab[data-tab="${tab}"]`);
+  if (btn) _activateTab(tab, btn);
+});
 
 // ── Mapa Only state ──
 let mapaOnlySelected = new Set(['autumn']);
@@ -438,3 +458,9 @@ init();
 sbLoadCounters();
 initSupabase();
 restaurarPartidaSeExistir();
+
+// Define hash inicial se não houver nenhum (e não estiver em callback OAuth)
+if (!window.location.hash && !window.location.search.includes('code=')) {
+  const saved = localStorage.getItem('ligaActiveTab') || 'sorteio';
+  history.replaceState({ tab: saved }, '', '#' + saved);
+}
