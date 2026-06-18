@@ -106,15 +106,29 @@ async function registrarPartidaLudo(resultado) {
   const idJogo = await _getRootId();
   if (!idJogo) throw new Error('Root não encontrado na Ludopedia. Tente novamente mais tarde.');
 
-  const nmLogado  = ludoUser?.usuario || ludoUser?.nm_usuario;
-  const idLogado  = ludoUser?.id_usuario || null;
-  const jogadores = resultado.jogadores || [];
+  const nmLudo     = (ludoUser?.usuario || ludoUser?.nm_usuario || '').toLowerCase();
+  const nmSupabase = (typeof currentUser !== 'undefined' ? (currentUser?.user_metadata?.full_name || '') : '').toLowerCase();
+  const idLogado   = ludoUser?.id_usuario || null;
+  const jogadores  = resultado.jogadores || [];
+
+  // Tenta identificar qual jogador é o usuário logado
+  // Aceita: username Ludopedia OU nome do Google/Supabase (case-insensitive)
+  const isMe = j => {
+    const n = (j.nome || '').toLowerCase();
+    return (nmLudo && n === nmLudo) || (nmSupabase && n === nmSupabase);
+  };
+
+  const temMatch = jogadores.some(isMe);
+  if (!temMatch) {
+    const nomes = [nmLudo, nmSupabase].filter(Boolean).map(n => `"${n}"`).join(' ou ');
+    throw new Error(`Seu usuário (${nomes}) não está na lista de jogadores desta partida. Cadastre-se com esse nome no app para registrar automaticamente.`);
+  }
 
   // Monta array de jogadores no formato da API Ludopedia
   const jogadoresLudo = jogadores.map(j => ({
     id_partida_jogador: 0,
     nome:       j.nome,
-    id_usuario: j.nome === nmLogado ? idLogado : null,
+    id_usuario: isMe(j) ? idLogado : null,
     fl_vencedor: j.vencedor ? 1 : 0,
     vl_pontos:   j.pontuacao !== null && j.pontuacao !== undefined ? j.pontuacao : null,
     observacao:  j.faccao || null,
