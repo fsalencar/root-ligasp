@@ -147,7 +147,7 @@ async function carregarTokenLudo() {
       .from('ludopedia_tokens')
       .select('*')
       .eq('user_id', currentUser.id)
-      .single();
+      .maybeSingle();
     if (data?.access_token) {
       ludoToken = data.access_token;
       ludoUser  = { nm_usuario: data.nm_usuario };
