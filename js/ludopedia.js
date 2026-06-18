@@ -70,14 +70,11 @@ async function carregarPerfilLudo() {
 }
 
 async function buscarUsuarioLudo(nmUsuario) {
-  // Tenta com param 'search' (igual ao endpoint de jogos)
+  // A API usa ?search= para filtrar usuários por nome
   const data = await ludoFetch(`usuarios?search=${encodeURIComponent(nmUsuario)}&rows=50`);
-  console.log('[Ludo buscarUsuario search] total:', data?.total, '| primeiros:', (data?.usuarios||[]).slice(0,5).map(u=>u.usuario));
   if (Array.isArray(data?.usuarios)) {
     const lc = nmUsuario.toLowerCase().trim();
-    const found = data.usuarios.find(u => (u.usuario || '').toLowerCase().trim() === lc);
-    console.log('[Ludo buscarUsuario search] buscando:', lc, '| encontrado:', found?.usuario ?? 'não');
-    return found || null;
+    return data.usuarios.find(u => (u.usuario || '').toLowerCase().trim() === lc) || null;
   }
   return null;
 }
