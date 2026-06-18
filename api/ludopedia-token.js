@@ -22,9 +22,10 @@ module.exports = async function handler(req, res) {
     let data;
     try { data = JSON.parse(text); } catch { return res.status(500).json({ error: 'Resposta inválida da Ludopedia', raw: text }); }
 
-    if (!response.ok) return res.status(400).json({ error: data.error_description || data.error || 'Falha na autenticação' });
+    if (!response.ok) return res.status(400).json({ error: data.error_description || data.error || 'Falha na autenticação', raw: data });
 
-    return res.json({ access_token: data.access_token });
+    // Retorna tudo que a Ludopedia enviou (para debug e para capturar campos extras como nm_usuario)
+    return res.json(data);
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }

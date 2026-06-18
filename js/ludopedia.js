@@ -164,13 +164,14 @@ function renderLudopediaStatus() {
   const logado = typeof currentUser !== 'undefined' && currentUser;
   if (!logado) { el.innerHTML = ''; return; }
 
-  if (ludoToken && ludoUser?.nm_usuario) {
+  if (ludoToken) {
+    const nome = ludoUser?.nm_usuario || ludoUser?.login || '—';
     el.innerHTML = `
       <div class="ludo-status connected" title="Ludopedia conectada">
         <span class="ludo-icon">🎲</span>
         <div class="ludo-info">
           <div class="ludo-label">Ludopedia</div>
-          <div class="ludo-nome">${ludoUser.nm_usuario}</div>
+          <div class="ludo-nome">${nome}</div>
         </div>
         <button class="ludo-btn-sm" onclick="desconectarLudopedia()">Desconectar</button>
       </div>`;
@@ -259,9 +260,16 @@ async function initLudopedia() {
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || 'Falha na autenticação');
-      ludoToken = d.access_token;
+      console.log('Ludopedia token response:', d);
+      ludoToken = d.access_token || d.token || d.accessToken;
+      if (!ludoToken) throw new Error('access_token não encontrado na resposta: ' + JSON.stringify(d));
+      // Captura dados do usuário que possam vir junto com o token
+      if (d.nm_usuario || d.login || d.username || d.user) {
+        ludoUser = { nm_usuario: d.nm_usuario || d.login || d.username || d.user?.nm_usuario };
+      }
       localStorage.setItem('ludo_token', ludoToken);
-      await carregarPerfilLudo();
+      if (ludoUser?.nm_usuario) localStorage.setItem('ludo_nm_usuario', ludoUser.nm_usuario);
+      try { await carregarPerfilLudo(); } catch (e) { console.warn('Perfil não carregado:', e.message); }
       await salvarTokenLudo(ludoToken);
     } catch (e) {
       console.error('Erro Ludopedia OAuth:', e);
@@ -274,21 +282,17 @@ async function initLudopedia() {
   const local = localStorage.getItem('ludo_token');
   if (local) {
     ludoToken = local;
-    try {
-      await carregarPerfilLudo();
-      renderLudopediaStatus();
-      return;
-    } catch {
-      // Token expirado
-      ludoToken = null;
-      localStorage.removeItem('ludo_token');
-    }
+    const savedNome = localStorage.getItem('ludo_nm_usuario');
+    if (savedNome) ludoUser = { nm_usuario: savedNome };
+    try { await carregarPerfilLudo(); } catch (e) { console.warn('Perfil Ludopedia indisponível:', e.message); }
+    renderLudopediaStatus();
+    return;
   }
 
   // Tentar token do Supabase
   await carregarTokenLudo();
   if (ludoToken) {
-    try { await carregarPerfilLudo(); } catch { ludoToken = null; localStorage.removeItem('ludo_token'); }
+    try { await carregarPerfilLudo(); } catch (e) { console.warn('Perfil Ludopedia indisponível:', e.message); }
   }
   renderLudopediaStatus();
 }
