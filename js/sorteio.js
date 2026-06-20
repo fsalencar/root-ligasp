@@ -418,10 +418,15 @@ function sortear() {
 
   sbIncrement('sorteio');
   if (mapArr.length > 1) sbIncrement('mapa');
-  renderResult(facResult, names, chosenMap, mapArr.length > 1, clearingResult, chosenDeck);
-  // Cria partida em andamento se usuário logado ou sempre (salva local)
-  const shuffledNamesForPartida = shuffle(names);
-  criarPartida(facResult, shuffledNamesForPartida, chosenMap, chosenDeck);
+
+  // Computa O mapeamento facção→jogador UMA única vez
+  // (renderResult e criarPartida devem usar o MESMO embaralhamento)
+  const shuffledNames = shuffle(names);
+  const playerFaction = {};
+  facResult.turnOrder.forEach((fac, i) => { playerFaction[fac.id] = shuffledNames[i]; });
+
+  renderResult(facResult, names, chosenMap, mapArr.length > 1, clearingResult, chosenDeck, playerFaction);
+  criarPartida(facResult, playerFaction, chosenMap, chosenDeck);
   atualizarBadgePartida(true);
 }
 
@@ -509,11 +514,13 @@ function drawClearings(map, keepCorners) {
 let _lastFacResult = null;
 let _lastNames = null;
 let _lastMap = null;
+let _lastPlayerFaction = null;
 
-function renderResult(facResult, names, chosenMap, wasDrawn, clearingResult, chosenDeck) {
+function renderResult(facResult, names, chosenMap, wasDrawn, clearingResult, chosenDeck, playerFaction) {
   _lastFacResult = facResult;
   _lastNames = names;
   _lastMap = chosenMap;
+  _lastPlayerFaction = playerFaction || {};
   const section = document.getElementById('resultSection');
   const cards = document.getElementById('resultCards');
   const summary = document.getElementById('summaryBox');
@@ -524,10 +531,8 @@ function renderResult(facResult, names, chosenMap, wasDrawn, clearingResult, cho
   if (chosenDeck) subtitleParts.push('🃏 ' + chosenDeck);
   document.getElementById('resultSubtitle').textContent = subtitleParts.join(' · ');
 
-  // Associar nomes
-  const shuffledNames = shuffle(names);
-  const playerFaction = {};
-  facResult.turnOrder.forEach((fac,i) => { playerFaction[fac.id] = shuffledNames[i]; });
+  // Usa o mapeamento já computado em sortear() — não embaralha de novo
+  if (!playerFaction) return;
 
   // --- MAPA SORTEADO ---
   mapDiv.innerHTML = '';
@@ -617,6 +622,12 @@ function renderResult(facResult, names, chosenMap, wasDrawn, clearingResult, cho
   // Resumo
   const minReach = REACH_MIN[names.length];
   const reachOk = facResult.totalReach >= minReach;
+
+  // Breakdown de alcance: "Marqueses(10) + Malandro(2) + ... = 20 ✓"
+  const reachBreakdown = facResult.setupOrder
+    .map(f => `${f.name} <span style="color:var(--gold);font-weight:600;">(${f.reach})</span>`)
+    .join(' + ') + ` = <strong>${facResult.totalReach}</strong> ${reachOk ? '✓' : '✗'}`;
+
   const suitCounts = clearingResult
     ? `<div class="summary-row">
          <span class="summary-key">Clareiras</span>
@@ -631,9 +642,11 @@ function renderResult(facResult, names, chosenMap, wasDrawn, clearingResult, cho
     <div class="summary-title">Resumo</div>
     <div class="summary-row"><span class="summary-key">Jogadores</span><span class="summary-val">${names.length}</span></div>
     <div class="summary-row"><span class="summary-key">Mapa</span><span class="summary-val">${chosenMap.icon} ${chosenMap.name}</span></div>
-    <div class="summary-row"><span class="summary-key">Alcance total</span>
-      <span class="summary-val ${reachOk?'reach-ok':'reach-warn'}">
-        ${facResult.totalReach} ${reachOk?'✓ (mín. '+minReach+')':'✗ (mín. '+minReach+')'}
+    <div class="summary-row" style="align-items:flex-start;">
+      <span class="summary-key" style="padding-top:2px;">Alcance</span>
+      <span class="summary-val ${reachOk?'reach-ok':'reach-warn'}" style="text-align:right;font-size:0.78rem;line-height:1.5;">
+        ${reachBreakdown}<br>
+        <span style="font-size:0.7rem;opacity:0.75;">mínimo: ${minReach}</span>
       </span>
     </div>
     <div class="summary-row"><span class="summary-key">Militantes</span><span class="summary-val">${facResult.chosen.filter(f=>f.type==='militant').length}</span></div>
@@ -758,18 +771,11 @@ function continuarParaLiga() {
       }
     }
 
-    // Map player names and factions from turnOrder
-    // turnOrder = order of play; match names to factions
-    const shuffledNames = [..._lastNames];
-    // We need to re-derive: in renderResult, names were shuffled to assign factions
-    // Use _lastFacResult.turnOrder factions, assigned to shuffled names
-    // Re-shuffle with same logic isn't possible, so we'll assign in setup order
+    // Usa o mapeamento facção→jogador já computado (mesmo do renderResult e criarPartida)
     const setupOrder = _lastFacResult.setupOrder;
 
     setupOrder.forEach((fac, i) => {
-      // Find which player got this faction from turnOrder
-      const turnIdx = _lastFacResult.turnOrder.findIndex(f => f.id === fac.id);
-      const playerName = shuffledNames[turnIdx] || _lastNames[i] || '';
+      const playerName = (_lastPlayerFaction && _lastPlayerFaction[fac.id]) || _lastNames[i] || '';
 
       const nameEl = document.getElementById('ligaName_' + i);
       const facEl  = document.getElementById('ligaFac_' + i);

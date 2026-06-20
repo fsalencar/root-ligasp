@@ -7,18 +7,16 @@ let resultadoGerado = null;
 
 // ── Criar / Restaurar ────────────────────────────────────────────────────────
 
-function criarPartida(facResult, nomes, mapa, deck) {
-  const jogadores = facResult.setupOrder.map((fac, i) => ({
-    nome: nomes[i] || `Jogador ${i + 1}`,
+function criarPartida(facResult, playerFaction, mapa, deck) {
+  // playerFaction: { factionId: playerName } — mapeamento já computado em sortear()
+  const jogadores = facResult.setupOrder.map((fac) => ({
+    nome: playerFaction[fac.id] || fac.name,
     faccao: fac.name,
     faccaoId: fac.id,
     tipo: fac.type,
   }));
 
-  const turnOrder = facResult.turnOrder.map(fac => {
-    const idx = facResult.setupOrder.indexOf(fac);
-    return idx >= 0 ? (nomes[idx] || `Jogador ${idx + 1}`) : fac.name;
-  });
+  const turnOrder = facResult.turnOrder.map(fac => playerFaction[fac.id] || fac.name);
 
   partidaAtual = {
     jogadores,
