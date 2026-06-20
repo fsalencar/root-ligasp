@@ -433,11 +433,16 @@ function showError(msg) {
   el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function drawFactions(avail, n, minReach) {
+function drawFactions(avail, n, minReach, preSelected = []) {
+  // Facções travadas (pré-selecionadas pelo usuário)
+  const locked = avail.filter(f => preSelected.includes(f.id));
+  // Pool para sorteio: apenas as que NÃO foram pré-selecionadas
+  const pool   = avail.filter(f => !preSelected.includes(f.id));
+  const remaining = n - locked.length;
+
   for (let attempt = 0; attempt < 600; attempt++) {
-    const candidate = shuffle(avail).slice(0, n);
+    const candidate = [...locked, ...shuffle(pool).slice(0, remaining)];
     const hasMilitant = candidate.some(f => f.type==='militant');
-    const hasInsurgent = candidate.some(f => f.type==='insurgent');
     if (!hasMilitant && n >= 2) continue;
     const insCount = candidate.filter(f => f.type==='insurgent').length;
     if (minInsurgentes > 0 && insCount < minInsurgentes) continue;
