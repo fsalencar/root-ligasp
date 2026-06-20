@@ -358,11 +358,9 @@ function sortear() {
     }
   }
 
-  // Alcance insuficiente mesmo com facções suficientes
+  // Alcance: só bloqueia se for IMPOSSÍVEL atingir o mínimo com qualquer combinação
   if (erros.length === 0) {
-    const totalReachAvail = avail.reduce((s,f) => s + f.reach, 0);
-    // Máximo alcance possível com n facções (pegar as n de maior alcance)
-    const sorted = [...avail].sort((a,b) => b.reach - a.reach);
+    const sorted   = [...avail].sort((a,b) => b.reach - a.reach);
     const maxReach = sorted.slice(0, n).reduce((s,f) => s + f.reach, 0);
     if (maxReach < min) {
       erros.push(
@@ -370,6 +368,7 @@ function sortear() {
       );
       erros.push('Habilite mais expansões ou reduza o número de jogadores.');
     }
+    // Se maxReach >= min mas pode ser difícil sortear → deixa passar, aviso no resultado
   }
 
   // Insurgente garantido mas não há insurgentes suficientes
@@ -434,11 +433,11 @@ function showError(msg) {
 }
 
 function drawFactions(avail, n, minReach, preSelected = []) {
-  // Facções travadas (pré-selecionadas pelo usuário)
-  const locked = avail.filter(f => preSelected.includes(f.id));
-  // Pool para sorteio: apenas as que NÃO foram pré-selecionadas
-  const pool   = avail.filter(f => !preSelected.includes(f.id));
+  const locked    = avail.filter(f => preSelected.includes(f.id));
+  const pool      = avail.filter(f => !preSelected.includes(f.id));
   const remaining = n - locked.length;
+
+  let fallback = null; // melhor combinação válida mesmo sem alcance suficiente
 
   for (let attempt = 0; attempt < 600; attempt++) {
     const candidate = [...locked, ...shuffle(pool).slice(0, remaining)];
@@ -450,17 +449,23 @@ function drawFactions(avail, n, minReach, preSelected = []) {
     const hasV2 = candidate.some(f => f.id === 'vagabond2');
     const hasV1 = candidate.some(f => f.id === 'vagabond');
     if (hasV2 && !hasV1) continue;
-    if (candidate.reduce((s,f) => s+f.reach, 0) < minReach) continue;
+
+    const totalReach = candidate.reduce((s,f) => s+f.reach, 0);
     const mil = candidate.filter(f => f.type==='militant');
     const ins = candidate.filter(f => f.type==='insurgent');
-    return {
+    const result = {
       chosen: candidate,
       setupOrder: [...shuffle(mil), ...shuffle(ins)],
       turnOrder: shuffle(candidate),
-      totalReach: candidate.reduce((s,f) => s+f.reach, 0)
+      totalReach,
+      reachWarning: totalReach < minReach,
     };
+
+    if (!result.reachWarning) return result;      // alcance ok → retorna imediatamente
+    if (!fallback) fallback = result;             // guarda o primeiro válido sem alcance
   }
-  return null;
+
+  return fallback; // retorna mesmo sem alcance suficiente (aviso será exibido)
 }
 
 // ===================== SORTEIO DE CLAREIRAS =====================
@@ -637,6 +642,20 @@ function renderResult(facResult, names, chosenMap, wasDrawn, clearingResult, cho
     <div class="summary-row"><span class="summary-key">Facções</span>
       <span class="summary-val" style="font-size:0.82rem;text-align:right">${facResult.setupOrder.map(f=>f.name).join(', ')}</span>
     </div>`;
+
+  // Aviso de alcance insuficiente (não bloqueia, apenas alerta)
+  const warnBox = document.getElementById('reachWarnBox');
+  if (warnBox) {
+    if (facResult.reachWarning) {
+      const minR = REACH_MIN[names.length];
+      warnBox.style.display = 'block';
+      warnBox.innerHTML = `<strong>⚠️ Alcance abaixo do mínimo</strong><br>
+        Alcance total: <strong>${facResult.totalReach}</strong> — mínimo recomendado: <strong>${minR}</strong>.<br>
+        O grupo pode gerar desequilíbrio. Considere habilitar mais expansões.`;
+    } else {
+      warnBox.style.display = 'none';
+    }
+  }
 
   section.style.display = 'block';
   section.scrollIntoView({ behavior: 'smooth', block: 'start' });
