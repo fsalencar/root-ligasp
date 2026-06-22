@@ -286,7 +286,7 @@ function renderExpansions() {
     card.innerHTML = `
       <input type="checkbox" ${selected ? 'checked' : ''}>
       <div class="exp-card-img" style="--exp-color:${color}">
-        <img src="img/boxes/${exp.id}.jpg" alt="${exp.name}" onerror="this.style.display='none'">
+        <img src="img/boxes/${exp.id}.png" alt="${exp.name}" onerror="this.style.display='none'">
         <div class="exp-card-check">✓</div>
       </div>
       <div class="exp-card-body">
