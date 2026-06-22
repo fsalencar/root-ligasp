@@ -30,10 +30,12 @@ async function initSupabase() {
         initLudopedia().then(() => {
           if (typeof carregarJogadoresCadastrados === 'function') carregarJogadoresCadastrados();
           if (typeof preencherSlotProprio === 'function') preencherSlotProprio();
+          setTimeout(() => { if (typeof verificarVinculacaoJogador === 'function') verificarVinculacaoJogador(); }, 1500);
         });
       } else {
         if (typeof carregarJogadoresCadastrados === 'function') carregarJogadoresCadastrados();
         if (typeof preencherSlotProprio === 'function') preencherSlotProprio();
+        setTimeout(() => { if (typeof verificarVinculacaoJogador === 'function') verificarVinculacaoJogador(); }, 1500);
       }
     }
     if (event === 'SIGNED_OUT') {

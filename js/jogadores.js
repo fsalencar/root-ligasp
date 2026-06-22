@@ -420,16 +420,18 @@ function _renderTelaGerenciar() {
 }
 
 function _renderCardGerenciar(j) {
-  const shortId = j.id.slice(0, 8);
+  const nomeEsc = j.nome.replace(/'/g, "\\'");
+  const vinculado = j.player_user_id ? `<div class="jsel-sub" style="color:#80d060;font-size:0.65rem;">✓ Conta vinculada</div>` : '';
   return `
     <div class="jogador-sel-item" style="cursor:default;">
       <div style="flex:1;min-width:0;">
         <div class="jsel-nome">${j.nome}</div>
-        <div class="jsel-sub" style="opacity:.5;font-size:0.65rem;">ID: ${shortId}…</div>
         ${j.ludopedia_usuario ? `<div class="jsel-sub">🎲 ${j.ludopedia_usuario}</div>` : ''}
+        ${vinculado}
       </div>
-      <button class="ludo-btn-sm" onclick="_mostrarQRJogador('${j.id}','${j.nome.replace(/'/g,"\\'")}')" title="QR Code">QR</button>
+      <button class="ludo-btn-sm" onclick="_mostrarQRJogador('${j.id}','${nomeEsc}')" title="QR Code">QR</button>
       <button class="jsel-edit-btn" onclick="_abrirFormEditarJogador('${j.id}')" title="Editar">✏️</button>
+      <button class="ludo-btn-sm" style="color:#f09080;border-color:rgba(240,144,128,0.3);padding:3px 9px;" onclick="_confirmarRemoverJogador('${j.id}','${nomeEsc}')" title="Remover">×</button>
     </div>`;
 }
 
@@ -623,4 +625,86 @@ async function _confirmarRemoverJogador(id, nome) {
   if (!confirm(`Remover "${nome}" do cadastro?`)) return;
   await _removerJogadorDoBanco(id);
   _renderTelaGerenciar();
+}
+
+// ── Vinculação de conta ────────────────────────────────────────────────────────
+
+async function verificarVinculacaoJogador() {
+  if (!currentUser) return;
+  // Só verifica uma vez por sessão
+  const key = 'linking_checked_' + currentUser.id;
+  if (sessionStorage.getItem(key)) return;
+  sessionStorage.setItem(key, '1');
+
+  const nome = currentUser.user_metadata?.display_name
+    || currentUser.user_metadata?.full_name
+    || currentUser.email?.split('@')[0] || '';
+  if (!nome) return;
+
+  try {
+    const sb = await initSupabase();
+    const { data: { session } } = await sb.auth.getSession();
+    const jwt = session?.access_token;
+    if (!jwt) return;
+
+    const res = await fetch('/api/find-players-by-name', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwt}` },
+      body: JSON.stringify({ name: nome }),
+    });
+    const data = await res.json();
+    if (res.ok && data.entries?.length) {
+      _exibirModalVinculacao(nome, data.entries, jwt);
+    }
+  } catch (e) { /* silencioso */ }
+}
+
+function _exibirModalVinculacao(nome, entries, jwt) {
+  const modal = document.getElementById('modalJogadores');
+  if (!modal) return;
+  modal.style.display = 'flex';
+
+  const itens = entries.map(e => `
+    <label style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);cursor:pointer;font-family:sans-serif;font-size:0.83rem;color:var(--text2);">
+      <input type="checkbox" checked value="${e.id}" style="accent-color:var(--gold);">
+      ${e.nome}
+    </label>`).join('');
+
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:400px;width:95%;">
+      <div class="modal-header">
+        <span style="font-size:0.95rem;font-weight:600;color:var(--gold);">👋 Vínculo de conta</span>
+        <button onclick="fecharGerenciarJogadores()" class="modal-close-btn">×</button>
+      </div>
+      <p style="font-family:sans-serif;font-size:0.82rem;color:var(--text2);margin-bottom:0.75rem;line-height:1.5;">
+        Encontramos jogadores cadastrados com o nome <strong style="color:var(--text)">${nome}</strong>.<br>
+        Vincular confirma que você é essa pessoa — seus pontos futuros serão consolidados.
+      </p>
+      <div id="vinculacaoLista" style="max-height:200px;overflow-y:auto;margin-bottom:0.75rem;">
+        ${itens}
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="ludo-btn-sm" style="flex:1;" onclick="fecharGerenciarJogadores()">Agora não</button>
+        <button class="btn-liga" style="flex:1;" onclick="_confirmarVinculacao('${jwt.replace(/'/g,"\\'")}')">Vincular selecionados</button>
+      </div>
+    </div>`;
+}
+
+async function _confirmarVinculacao(jwt) {
+  const checkboxes = document.querySelectorAll('#vinculacaoLista input[type=checkbox]:checked');
+  const ids = Array.from(checkboxes).map(cb => cb.value);
+  if (!ids.length) { fecharGerenciarJogadores(); return; }
+
+  try {
+    const res = await fetch('/api/link-player', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwt}` },
+      body: JSON.stringify({ entry_ids: ids }),
+    });
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      fecharGerenciarJogadores();
+      await carregarJogadoresCadastrados();
+    }
+  } catch (e) { /* silencioso */ }
 }
