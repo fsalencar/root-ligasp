@@ -272,7 +272,6 @@ function renderPartidaAtiva(section) {
       </div>
 
       ${seatOrder.length > 0 ? `
-        <div class="section-title" style="margin-top:1.25rem;">Ordem da Mesa</div>
         <div id="seatingOrderList" class="seating-order-list">
           ${seatOrder.map((nome, i) => `
             <div class="seating-item${i === 0 ? ' fixed' : ''}">

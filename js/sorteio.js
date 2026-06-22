@@ -20,8 +20,7 @@ let _lastChosenDeck = null;
 
 function computeSorteioTurnOrder(setupOrder) {
   if (!Array.isArray(setupOrder) || setupOrder.length === 0) return [];
-  const [first, ...rest] = setupOrder;
-  return [first, ...rest.slice().reverse()];
+  return [...setupOrder].reverse();
 }
 
 function onSorteioSetupDragStart(event, idx) {
@@ -651,27 +650,6 @@ function renderResult(facResult, names, chosenMap, wasDrawn, clearingResult, cho
   // --- FACÇÕES ---
   cards.innerHTML = '';
 
-  // Seção preparação
-  cards.insertAdjacentHTML('beforeend', `
-    <div class="divider-section">
-      <div class="divider-label">Ordem de Preparação</div>
-      <hr class="divider-line">
-    </div>`);
-
-  facResult.setupOrder.forEach((fac, i) => {
-    const player = playerFaction[fac.id];
-    const card = document.createElement('div');
-    card.className = `result-card faction-accent-${fac.accent}`;
-    card.innerHTML = `
-      <div class="order-badge">${i+1}°</div>
-      <div class="card-player">${player}</div>
-      <div class="card-faction">${fac.name}</div>
-      <span class="card-type-badge ${fac.type==='militant'?'badge-militant':'badge-insurgent'}">${fac.type==='militant'?'⚔ Militante':'◆ Insurgente'}</span>
-      <div class="card-reach">Alcance: ${fac.reach}</div>
-      <div class="card-setup-order">Prepara-se ${fac.type==='militant'?'antes dos insurgentes':'após os militantes'}</div>`;
-    cards.appendChild(card);
-  });
-
   const setupOrder = Array.isArray(_lastSetupOrder) && _lastSetupOrder.length === facResult.setupOrder.length
     ? _lastSetupOrder
     : facResult.setupOrder.map(f => ({ player: playerFaction[f.id], facId: f.id, facName: f.name, type: f.type, accent: f.accent }));
@@ -683,8 +661,14 @@ function renderResult(facResult, names, chosenMap, wasDrawn, clearingResult, cho
     <div class="divider-section" style="margin-top:2rem">
       <div class="divider-label">Ordem de Preparação</div>
       <hr class="divider-line">
-    </div>`);
+    </div>
+    <div class="sorteio-disclaimer">
+      O primeiro jogador sorteado foi: <strong>${setupOrder[0]?.player || '—'}</strong>. Ajuste os demais para refletir a sua mesa.
+      A ordem de preparação segue à direita (anti-horário) do primeiro jogador.
+    </div>
+    <div class="round-table" id="sorteioSetupRoundTable"></div>`);
 
+  const roundTable = document.getElementById('sorteioSetupRoundTable');
   setupOrder.forEach((item, i) => {
     const card = document.createElement('div');
     card.className = `result-card faction-accent-${item.accent} seating-item${i===0 ? ' fixed' : ''}`;
@@ -701,7 +685,7 @@ function renderResult(facResult, names, chosenMap, wasDrawn, clearingResult, cho
       <span class="card-type-badge ${item.type==='militant'?'badge-militant':'badge-insurgent'}">${item.type==='militant'?'⚔ Militante':'◆ Insurgente'}</span>
       <div class="card-reach">Alcance: ${facResult.setupOrder[i]?.reach || '?'}</div>
       <div class="card-setup-order">${i===0 ? 'Prepara primeiro (fixo)' : 'Arraste para ajustar a ordem'}</div>`;
-    cards.appendChild(card);
+    roundTable.appendChild(card);
   });
 
   cards.insertAdjacentHTML('beforeend', `
