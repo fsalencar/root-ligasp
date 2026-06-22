@@ -211,6 +211,16 @@ function getPreselectedFactions() {
   return pre;
 }
 
+// Retorna [{playerIdx, facId}] para jogadores com facção pré-selecionada
+function getPlayerFacPreselections() {
+  const result = [];
+  for (let i = 0; i < numPlayers; i++) {
+    const sel = document.getElementById('playerFac_' + i);
+    if (sel && sel.value) result.push({ playerIdx: i, facId: sel.value });
+  }
+  return result;
+}
+
 function checkPreselectionReach() {
   const warnBox = document.getElementById('reachWarnBox');
   if (!warnBox) return;
@@ -480,23 +490,25 @@ function sortear() {
   sbIncrement('sorteio');
   if (mapArr.length > 1) sbIncrement('mapa');
 
-  // Computa O mapeamento facção→jogador UMA única vez
-  // (renderResult e criarPartida devem usar o MESMO embaralhamento)
-  const shuffledNames = shuffle(names);
-  const playerFaction = {};
-  facResult.setupOrder.forEach((fac, i) => { playerFaction[fac.id] = shuffledNames[i]; });
-  _lastSetupOrder = facResult.setupOrder.map(f => ({
-    player: playerFaction[f.id],
-    facId: f.id,
-    facName: f.name,
-    type: f.type,
-    accent: f.accent,
-  }));
-  _lastTurnOrder = computeSorteioTurnOrder(_lastSetupOrder);
+  // Computa mapeamento facção→jogador respeitando pré-seleções por jogador
+  const preSelections   = getPlayerFacPreselections();
+  const playerFaction   = {};
+
+  // Fixa pré-seleções: jogador[playerIdx] → facId
+  preSelections.forEach(({ playerIdx, facId }) => {
+    playerFaction[facId] = names[playerIdx];
+  });
+
+  // Embaralha os demais jogadores entre as facções restantes
+  const fixedFacIds     = new Set(preSelections.map(p => p.facId));
+  const fixedPlayerIdxs = new Set(preSelections.map(p => p.playerIdx));
+  const freeNames       = shuffle(names.filter((_, i) => !fixedPlayerIdxs.has(i)));
+  let freeIdx = 0;
+  facResult.turnOrder.forEach((fac) => {
+    if (!fixedFacIds.has(fac.id)) playerFaction[fac.id] = freeNames[freeIdx++];
+  });
 
   renderResult(facResult, names, chosenMap, mapArr.length > 1, clearingResult, chosenDeck, playerFaction);
-  criarPartida(facResult, playerFaction, chosenMap, chosenDeck);
-  atualizarBadgePartida(true);
 }
 
 function showError(msg) {
@@ -890,8 +902,18 @@ function renderResult(facResult, names, chosenMap, wasDrawn, clearingResult, cho
 
   section.style.display = 'block';
   section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const btnI = document.getElementById('btnIniciarPartida');
+  if (btnI) btnI.style.display = 'block';
   const btnC = document.getElementById('btnContinuarLiga');
   if (btnC) btnC.style.display = 'block';
+}
+
+function iniciarPartida() {
+  if (!_lastFacResult || !_lastPlayerFaction) return;
+  criarPartida(_lastFacResult, _lastPlayerFaction, _lastMap, _lastChosenDeck);
+  atualizarBadgePartida(true);
+  const tabBtn = document.querySelector('[data-tab="partida"]');
+  if (tabBtn) tabBtn.click();
 }
 
 // ===================== SVG DO TABULEIRO =====================

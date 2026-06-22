@@ -306,6 +306,16 @@
   }
   .btn-resetar:hover { border-color: var(--border2); color: var(--text2); }
 
+  /* ===== INICIAR PARTIDA ===== */
+  .btn-iniciar {
+    width: 100%; padding: 0.9rem; background: rgba(74,143,48,0.15);
+    color: #80d060; border: 1px solid rgba(74,143,48,0.5);
+    border-radius: var(--radius-lg); font-size: 1rem;
+    font-family: Georgia, serif; letter-spacing: 0.05em;
+    cursor: pointer; transition: all 0.2s; margin-top: 1rem; display: none;
+  }
+  .btn-iniciar:hover { background: rgba(74,143,48,0.25); }
+
   /* ===== CONTINUAR PARA LIGA ===== */
   .btn-continuar {
     width: 100%; padding: 0.9rem; background: transparent;
