@@ -385,6 +385,8 @@ function shuffle(arr) {
 // ===================== SORTEIO PRINCIPAL =====================
 function sortear() {
   document.getElementById('errorMsg').style.display = 'none';
+  _lastSetupOrder = null;
+  _lastTurnOrder  = null;
 
   const names = getPlayerNames();
   const n = numPlayers;
@@ -577,6 +579,94 @@ function drawClearings(map, keepCorners) {
   return result;
 }
 
+// ===================== MESA REDONDA =====================
+function _renderMesaRedonda(containerId, seats, interactive) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const N = seats.length;
+  const W  = N <= 4 ? 310 : 370;
+  const R  = N <= 3 ? 100 : N <= 4 ? 112 : 132;
+  const cx = W / 2, cy = W / 2;
+  const SW = N >= 5 ? 88 : 98;
+  const SH = 86;
+  const TD = 90;
+
+  el.innerHTML = '';
+  el.style.cssText = `position:relative;width:${W}px;height:${W}px;margin:0 auto;`;
+
+  // Centro da mesa
+  const center = document.createElement('div');
+  center.style.cssText = `position:absolute;width:${TD}px;height:${TD}px;border-radius:50%;`
+    + `background:var(--surface);border:2px solid var(--border);`
+    + `left:${cx-TD/2}px;top:${cy-TD/2}px;`
+    + `display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;z-index:1;`;
+  center.innerHTML = `<span style="font-size:1.3rem;line-height:1;">${interactive ? '↺' : '↻'}</span>`
+    + `<span style="font-size:.56rem;color:var(--text3);font-family:sans-serif;text-align:center;line-height:1.3;">`
+    + `${interactive ? 'Prep.<br>Anti-horária' : 'Turno<br>Horário'}</span>`;
+  el.appendChild(center);
+
+  let selectedIdx = null;
+
+  seats.forEach((seat, i) => {
+    const rad  = (-90 + 360 / N * i) * Math.PI / 180;
+    const x    = cx + R * Math.cos(rad);
+    const y    = cy + R * Math.sin(rad);
+    const isFirst    = i === 0;
+    const isClickable = interactive && !isFirst;
+    const typeBg    = seat.type === 'militant' ? 'rgba(200,70,70,.85)' : 'rgba(50,150,80,.85)';
+    const typeLabel = seat.type === 'militant' ? '⚔ Militante' : '◆ Insurgente';
+
+    const div = document.createElement('div');
+    div.style.cssText = `position:absolute;width:${SW}px;`
+      + `left:${Math.round(x - SW/2)}px;top:${Math.round(y - SH/2)}px;`
+      + `background:${isFirst ? 'rgba(218,165,32,.15)' : 'var(--surface2)'};`
+      + `border:1.5px solid ${isFirst ? 'rgba(218,165,32,.65)' : 'var(--border)'};`
+      + `border-radius:8px;padding:5px 5px 4px;text-align:center;box-sizing:border-box;z-index:2;`
+      + `cursor:${isClickable ? 'pointer' : 'default'};transition:border-color .12s,background .12s,transform .1s;`;
+
+    div.innerHTML = `<div style="font-size:.6rem;color:${isFirst ? 'var(--gold)' : 'var(--text3)'};font-family:sans-serif;margin-bottom:2px;">`
+      + `${seat.num}°${isFirst && interactive ? ' 📍' : ''}</div>`
+      + `<div style="font-family:sans-serif;font-size:.7rem;font-weight:700;color:var(--text1);`
+      + `white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:${SW-12}px;margin:0 auto 1px;">`
+      + `${seat.player.toUpperCase()}</div>`
+      + `<div style="font-family:sans-serif;font-size:.59rem;color:var(--gold);`
+      + `white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:${SW-12}px;margin:0 auto 2px;">`
+      + `${seat.facName}</div>`
+      + `<span style="display:inline-block;padding:1px 4px;border-radius:3px;font-size:.5rem;`
+      + `font-family:sans-serif;background:${typeBg};color:#fff;">${typeLabel}</span>`
+      + (seat.reach !== undefined
+        ? `<div style="font-size:.52rem;color:var(--text3);font-family:sans-serif;margin-top:2px;">Alcance ${seat.reach}</div>`
+        : '');
+
+    if (isClickable) {
+      div.addEventListener('mouseenter', () => { if (selectedIdx !== i) div.style.borderColor = 'rgba(218,165,32,.4)'; });
+      div.addEventListener('mouseleave', () => {
+        if (selectedIdx !== i) { div.style.borderColor = 'var(--border)'; div.style.background = 'var(--surface2)'; }
+      });
+      div.addEventListener('click', () => {
+        if (selectedIdx === null) {
+          selectedIdx = i;
+          div.style.borderColor = 'var(--gold)';
+          div.style.background   = 'rgba(218,165,32,.22)';
+          div.style.transform    = 'scale(1.06)';
+        } else if (selectedIdx === i) {
+          selectedIdx = null;
+          div.style.borderColor = 'var(--border)';
+          div.style.background  = 'var(--surface2)';
+          div.style.transform   = '';
+        } else {
+          const a = selectedIdx, b = i;
+          selectedIdx = null;
+          const newOrder = [..._lastSetupOrder];
+          [newOrder[a], newOrder[b]] = [newOrder[b], newOrder[a]];
+          updateSorteioSetupOrder(newOrder);
+        }
+      });
+    }
+    el.appendChild(div);
+  });
+}
+
 // ===================== RENDER RESULTADO =====================
 let _lastFacResult = null;
 let _lastNames = null;
@@ -647,63 +737,51 @@ function renderResult(facResult, names, chosenMap, wasDrawn, clearingResult, cho
     renderBoardSVG('boardSvgWrap', clearingResult, chosenMap);
   }
 
-  // --- FACÇÕES ---
+  // --- FACÇÕES (mesas redondas) ---
   cards.innerHTML = '';
 
-  const setupOrder = Array.isArray(_lastSetupOrder) && _lastSetupOrder.length === facResult.setupOrder.length
-    ? _lastSetupOrder
-    : facResult.setupOrder.map(f => ({ player: playerFaction[f.id], facId: f.id, facName: f.name, type: f.type, accent: f.accent }));
-  const turnOrder = Array.isArray(_lastTurnOrder) && _lastTurnOrder.length === setupOrder.length
-    ? _lastTurnOrder
-    : computeSorteioTurnOrder(setupOrder);
+  // Constrói/reutiliza setupOrder com reach incluso
+  if (!Array.isArray(_lastSetupOrder) || _lastSetupOrder.length !== facResult.setupOrder.length) {
+    _lastSetupOrder = facResult.setupOrder.map(f => ({
+      player: playerFaction[f.id], facId: f.id, facName: f.name, type: f.type, accent: f.accent, reach: f.reach,
+    }));
+    _lastTurnOrder = computeSorteioTurnOrder(_lastSetupOrder);
+  }
+  const setupOrder = _lastSetupOrder;
+  const turnOrder  = _lastTurnOrder || computeSorteioTurnOrder(setupOrder);
+  const N = setupOrder.length;
 
+  // ── Mesa de Preparação (anti-horária, interativa) ──
   cards.insertAdjacentHTML('beforeend', `
     <div class="divider-section" style="margin-top:2rem">
       <div class="divider-label">Ordem de Preparação</div>
       <hr class="divider-line">
     </div>
-    <div class="sorteio-disclaimer">
-      O primeiro jogador sorteado foi: <strong>${setupOrder[0]?.player || '—'}</strong>. Ajuste os demais para refletir a sua mesa.
-      A ordem de preparação segue à direita (anti-horário) do primeiro jogador.
-    </div>
-    <div class="round-table" id="sorteioSetupRoundTable"></div>`);
+    <p class="sorteio-disclaimer">
+      <strong>${setupOrder[0]?.player || '—'}</strong> prepara primeiro (fixo ↺).
+      Clique em dois jogadores para trocar de posição na mesa.
+    </p>
+    <div id="mesaSetupWrap"></div>`);
 
-  const roundTable = document.getElementById('sorteioSetupRoundTable');
-  setupOrder.forEach((item, i) => {
-    const card = document.createElement('div');
-    card.className = `round-item faction-accent-${item.accent}${i===0 ? ' fixed' : ''}`;
-    card.draggable = i > 0;
-    if (i > 0) {
-      card.setAttribute('ondragstart', `onSorteioSetupDragStart(event,${i})`);
-      card.setAttribute('ondragover', `onSorteioSetupDragOver(event)`);
-      card.setAttribute('ondrop', `onSorteioSetupDrop(event,${i})`);
-    }
-    card.innerHTML = `
-      <div class="order-badge">${i+1}°</div>
-      <div class="card-player">${item.player}</div>
-      <div class="card-faction">${item.facName}</div>
-      <span class="card-type-badge ${item.type==='militant'?'badge-militant':'badge-insurgent'}">${item.type==='militant'?'⚔ Militante':'◆ Insurgente'}</span>
-      <div class="card-reach">Alcance: ${facResult.setupOrder[i]?.reach || '?'}</div>
-      <div class="card-setup-order">${i===0 ? 'Prepara primeiro (fixo)' : 'Arraste para ajustar a ordem'}</div>`;
-    roundTable.appendChild(card);
-  });
+  _renderMesaRedonda('mesaSetupWrap',
+    setupOrder.map((item, i) => ({ player: item.player, facName: item.facName, type: item.type, reach: item.reach, num: i + 1 })),
+    true);
 
+  // ── Mesa de Turno (horária, exibição) ──
   cards.insertAdjacentHTML('beforeend', `
     <div class="divider-section" style="margin-top:2rem">
       <div class="divider-label">Ordem de Jogo (1º turno)</div>
       <hr class="divider-line">
-    </div>`);
+    </div>
+    <p class="sorteio-disclaimer">
+      A ordem de turno é <strong>horária ↻</strong> — começa pelo último a preparar.
+    </p>
+    <div id="mesaTurnWrap"></div>`);
 
-  turnOrder.forEach((item, i) => {
-    const card = document.createElement('div');
-    card.className = `result-card faction-accent-${item.accent}`;
-    card.innerHTML = `
-      <div class="order-badge">${i+1}°</div>
-      <div class="card-player">${item.player}</div>
-      <div class="card-faction">${item.facName}</div>
-      <span class="card-type-badge ${item.type==='militant'?'badge-militant':'badge-insurgent'}">${item.type==='militant'?'⚔ Militante':'◆ Insurgente'}</span>`;
-    cards.appendChild(card);
-  });
+  // Mesmos assentos físicos, número de turno = N − i (inverso da preparação)
+  _renderMesaRedonda('mesaTurnWrap',
+    setupOrder.map((item, i) => ({ player: item.player, facName: item.facName, type: item.type, num: N - i })),
+    false);
 
   // Resumo
   const minReach = REACH_MIN[names.length];
@@ -857,28 +935,23 @@ function continuarParaLiga() {
       }
     }
 
-    // Usa o mapeamento facção→jogador já computado (mesmo do renderResult e criarPartida)
-    const setupOrder = _lastFacResult.setupOrder;
+    // Usa a ordem física atual (pode ter sido ajustada pelo drag)
+    const seating = (Array.isArray(_lastSetupOrder) && _lastSetupOrder.length)
+      ? _lastSetupOrder
+      : _lastFacResult.setupOrder.map(f => ({
+          facId: f.id, player: (_lastPlayerFaction && _lastPlayerFaction[f.id]) || '',
+        }));
 
-    setupOrder.forEach((fac, i) => {
-      const playerName = (_lastPlayerFaction && _lastPlayerFaction[fac.id]) || _lastNames[i] || '';
+    seating.forEach((item, i) => {
+      const playerName = item.player || (_lastPlayerFaction && _lastPlayerFaction[item.facId]) || _lastNames[i] || '';
+      const facId      = item.facId === 'vagabond2' ? 'vagabond2' : (item.facId || '');
 
       const nameEl = document.getElementById('ligaName_' + i);
       const facEl  = document.getElementById('ligaFac_' + i);
-
       if (nameEl) nameEl.value = playerName;
-      if (facEl) {
-        // Find matching option
-        const facId = fac.id === 'vagabond2' ? 'vagabond2' : fac.id;
-        Array.from(facEl.options).forEach(opt => { if (opt.value === facId) opt.selected = true; });
-        onFacChange(i);
-        updateFacSelects();
-        // Set vagabond type if applicable
-        if (fac.id === 'vagabond' || fac.id === 'vagabond2') {
-          updateVagSelects();
-        }
-      }
+      if (facEl)  { facEl.value = facId; onFacChange(i); }
     });
+    updateFacSelects();
 
     document.getElementById('tab-liga').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 150);

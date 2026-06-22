@@ -113,7 +113,7 @@ function _refreshSlotBadge(i) {
     el.innerHTML = `
       <div class="slot-badge-ludo">
         <span>${title}</span>
-        ${ludo.ludopedia_id ? `<button type="button" class="slot-badge-remove" onclick="limparSlotLudo(${i})" title="Remover vínculo Ludopedia">×</button>` : ''}
+        <button type="button" class="slot-badge-remove" onclick="limparSlotLudo(${i})" title="Remover vínculo Ludopedia">×</button>
       </div>
       ${idLine}`;
   } else {
