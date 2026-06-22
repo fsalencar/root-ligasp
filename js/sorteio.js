@@ -261,37 +261,55 @@ function checkPreselectionReach() {
 }
 
 // ===================== EXPANSÕES =====================
+const EXP_COLORS = { base:'#f0801a', riverfolk:'#20c0c0', underworld:'#c020c0', marauder:'#c04040', homeland:'#20a080' };
+const FAC_COLORS = {
+  marquise:'#f0801a', eyrie:'#4090d0', alliance:'#40a040', vagabond:'#909090',
+  lizard:'#c8b820', riverfolk:'#20c0c0', duchy:'#c020c0', corvid:'#606060',
+  hundreds:'#c04040', keepers:'#c0a020', diaspora:'#20a080', council:'#7040d0', knaves:'#406040',
+};
+
 function renderExpansions() {
   const grid = document.getElementById('expansionsGrid');
   grid.innerHTML = '';
   EXPANSIONS.forEach(exp => {
-    const row = document.createElement('label');
-    row.className = 'exp-row' + (selectedExpansions.has(exp.id) ? ' selected' : '');
-    row.innerHTML = `
-      <input type="checkbox" ${selectedExpansions.has(exp.id)?'checked':''}>
-      <div style="flex:1">
-        <div class="exp-name">${exp.name}</div>
-        <div class="exp-facs">${exp.desc}</div>
-        ${exp.hasV2 ? `<div id="v2wrap_${exp.id}"></div>` : ''}
-      </div>`;
-    const cb = row.querySelector('input');
+    const selected = selectedExpansions.has(exp.id);
+    const color = EXP_COLORS[exp.id] || '#888';
+    const faceChips = exp.facs.map(fid => {
+      const fc = FAC_COLORS[fid] || '#888';
+      const fn = (FACTIONS[fid] && FACTIONS[fid].name) || fid;
+      return `<span class="exp-fac-chip" style="--fac-color:${fc}">${fn}</span>`;
+    }).join('');
+
+    const card = document.createElement('label');
+    card.className = 'exp-card' + (selected ? ' selected' : '');
+    card.style.setProperty('--exp-color', color);
+    card.innerHTML = `
+      <input type="checkbox" ${selected ? 'checked' : ''}>
+      <div class="exp-card-img" style="--exp-color:${color}">
+        <img src="img/boxes/${exp.id}.jpg" alt="${exp.name}" onerror="this.style.display='none'">
+        <div class="exp-card-check">✓</div>
+      </div>
+      <div class="exp-card-body">
+        <div class="exp-card-name">${exp.name}</div>
+        <div class="exp-card-facs">${faceChips}</div>
+      </div>
+      ${exp.hasV2 ? `<div class="exp-card-v2" id="v2wrap_${exp.id}"></div>` : ''}`;
+
+    const cb = card.querySelector('input');
     cb.onchange = () => {
       if (cb.checked) {
         selectedExpansions.add(exp.id);
       } else {
-        if (selectedExpansions.size <= 1) {
-          cb.checked = true; // mínimo 1 expansão
-          return;
-        }
+        if (selectedExpansions.size <= 1) { cb.checked = true; return; }
         selectedExpansions.delete(exp.id);
         if (exp.id === 'riverfolk') allowV2 = false;
       }
-      row.classList.toggle('selected', selectedExpansions.has(exp.id));
+      card.classList.toggle('selected', selectedExpansions.has(exp.id));
       if (exp.hasV2) renderV2Option(exp.id, selectedExpansions.has(exp.id));
       updateReachInfo();
     };
-    grid.appendChild(row);
-    if (exp.hasV2) renderV2Option(exp.id, selectedExpansions.has(exp.id));
+    grid.appendChild(card);
+    if (exp.hasV2) renderV2Option(exp.id, selected);
   });
 }
 
