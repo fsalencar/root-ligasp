@@ -671,7 +671,7 @@ function renderResult(facResult, names, chosenMap, wasDrawn, clearingResult, cho
   const roundTable = document.getElementById('sorteioSetupRoundTable');
   setupOrder.forEach((item, i) => {
     const card = document.createElement('div');
-    card.className = `result-card faction-accent-${item.accent} seating-item${i===0 ? ' fixed' : ''}`;
+    card.className = `round-item faction-accent-${item.accent}${i===0 ? ' fixed' : ''}`;
     card.draggable = i > 0;
     if (i > 0) {
       card.setAttribute('ondragstart', `onSorteioSetupDragStart(event,${i})`);

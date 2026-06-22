@@ -246,14 +246,26 @@
     padding: 0.5rem;
     justify-items: center;
   }
-  .round-table .result-card {
-    width: 100%; cursor: grab;
-    margin-bottom: 0;
+  .round-table .round-item {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem;
+    cursor: grab;
+    position: relative;
+    overflow: hidden;
+    min-height: 120px;
+    display: grid;
+    gap: 0.45rem;
   }
-  .round-table .result-card.fixed {
+  .round-table .round-item.fixed {
     cursor: default;
     border-color: rgba(200,160,80,0.45);
     box-shadow: inset 0 0 0 1px rgba(200,160,80,0.18);
+  }
+  .round-table .round-item .card-player {
+    font-size: 0.8rem;
   }
   .sorteio-disclaimer {
     font-size: 0.82rem;
