@@ -5,6 +5,7 @@ let timerInterval = null;
 let estadoPartida = 'ativo'; // 'ativo' | 'formulario' | 'resultado'
 let resultadoGerado = null;
 let _dragSourceSeatingIndex = null;
+let _dragSourceSetupIndex = null;
 
 function computeStartOrder(seatingOrder) {
   if (!Array.isArray(seatingOrder) || seatingOrder.length === 0) return [];
@@ -43,6 +44,39 @@ function updateSeatingOrder(order) {
   if (!Array.isArray(order) || !order.length || !partidaAtual) return;
   partidaAtual.seatingOrder = order;
   partidaAtual.startOrder = computeStartOrder(order);
+  localStorage.setItem('partidaAtual', JSON.stringify(partidaAtual));
+  renderPartida();
+}
+
+function onSetupDragStart(event, idx) {
+  _dragSourceSetupIndex = idx;
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', String(idx));
+}
+
+function onSetupDragOver(event) {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+}
+
+function onSetupDrop(event, targetIdx) {
+  event.preventDefault();
+  if (_dragSourceSetupIndex === null || _dragSourceSetupIndex === targetIdx) return;
+
+  const order = Array.isArray(partidaAtual?.jogadores)
+    ? [...partidaAtual.jogadores]
+    : [];
+  if (!order.length || _dragSourceSetupIndex >= order.length || targetIdx >= order.length) return;
+
+  const [moved] = order.splice(_dragSourceSetupIndex, 1);
+  const insertAt = _dragSourceSetupIndex < targetIdx ? targetIdx - 1 : targetIdx;
+  order.splice(insertAt, 0, moved);
+  updateSetupOrder(order);
+}
+
+function updateSetupOrder(order) {
+  if (!Array.isArray(order) || !order.length || !partidaAtual) return;
+  partidaAtual.jogadores = order;
   localStorage.setItem('partidaAtual', JSON.stringify(partidaAtual));
   renderPartida();
 }
@@ -254,18 +288,22 @@ function renderPartidaAtiva(section) {
       </div>
 
       <div class="section-title" style="margin-top:1.25rem;">Ordem de Setup</div>
+      <div class="setup-order-list">
       ${jogadores.map((j, i) => `
-        <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;background:var(--surface2);">
-          <div style="width:26px;height:26px;border-radius:50%;background:var(--surface);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:0.78rem;color:var(--text3);font-family:sans-serif;flex-shrink:0;font-weight:bold;">${i + 1}</div>
-          <div style="flex:1;">
-            <div style="font-size:0.9rem;color:var(--text);">${j.nome}</div>
-            <div style="font-size:0.75rem;font-family:sans-serif;">
-              <span style="color:var(--text3);">${j.faccao}</span>
-              <span style="margin-left:6px;padding:1px 6px;border-radius:10px;font-size:0.68rem;background:${j.tipo === 'militant' ? 'rgba(200,64,40,0.15)' : 'rgba(74,143,48,0.15)'};color:${j.tipo === 'militant' ? '#f09080' : '#80d060'};">${j.tipo === 'militant' ? 'Militante' : 'Insurgente'}</span>
+        <div class="setup-item" draggable="true" data-index="${i}"
+          ondragstart="onSetupDragStart(event,${i})" ondragover="onSetupDragOver(event)" ondrop="onSetupDrop(event,${i})">
+          <div class="setup-item-label">${i + 1}</div>
+          <div class="setup-item-content">
+            <div class="setup-item-name">${j.nome}</div>
+            <div class="setup-item-meta">
+              <span>${j.faccao}</span>
+              <span class="setup-item-type" style="background:${j.tipo === 'militant' ? 'rgba(200,64,40,0.15)' : 'rgba(74,143,48,0.15)'};color:${j.tipo === 'militant' ? '#f09080' : '#80d060'};">${j.tipo === 'militant' ? 'Militante' : 'Insurgente'}</span>
             </div>
           </div>
+          <span class="setup-item-handle" title="Arrastar para reordenar">⠿</span>
         </div>
       `).join('')}
+      </div>
 
       ${seatOrder.length > 0 ? `
         <div class="section-title" style="margin-top:1.25rem;">Ordem da Mesa</div>
