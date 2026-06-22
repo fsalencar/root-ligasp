@@ -106,7 +106,7 @@ function renderAuthUI() {
   if (!btn) return;
 
   if (currentUser) {
-    const nome   = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Usuário';
+    const nome   = currentUser.user_metadata?.display_name || currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Usuário';
     const avatar = currentUser.user_metadata?.avatar_url;
     const ludoNome = (typeof ludoUser !== 'undefined') ? (ludoUser?.usuario || ludoUser?.nm_usuario) : null;
     const temLudo  = (typeof ludoToken !== 'undefined') && ludoToken;
@@ -137,7 +137,8 @@ async function abrirModalPerfil() {
   const modal = document.getElementById('modalJogadores');
   if (!modal || !currentUser) return;
 
-  const nome   = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Usuário';
+  const displayName = currentUser.user_metadata?.display_name || '';
+  const nome   = displayName || currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Usuário';
   const avatar = currentUser.user_metadata?.avatar_url;
   const email  = currentUser.email || '';
   const userId = currentUser.id;
@@ -164,6 +165,21 @@ async function abrirModalPerfil() {
           <div style="font-size:1rem;font-weight:600;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${nome}</div>
           <div style="font-size:0.73rem;color:var(--text3);font-family:sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${email}</div>
         </div>
+      </div>
+
+      <!-- Nome de exibição -->
+      <div class="perfil-section">
+        <div class="perfil-section-label">NOME DE EXIBIÇÃO</div>
+        <p style="font-family:sans-serif;font-size:0.73rem;color:var(--text3);margin:0 0 6px;line-height:1.4;">
+          Nome que aparece nos slots de jogador ao sortear.
+        </p>
+        <div style="display:flex;gap:6px;">
+          <input id="perfilDisplayName" type="text" value="${displayName}"
+            placeholder="${currentUser.user_metadata?.full_name || 'Seu nome'}"
+            style="flex:1;font-size:0.85rem;">
+          <button class="ludo-btn-sm" style="white-space:nowrap;" onclick="_salvarNomeExibicao()">Salvar</button>
+        </div>
+        <div id="perfilDisplayNameStatus" style="font-size:0.72rem;min-height:14px;margin-top:4px;font-family:sans-serif;"></div>
       </div>
 
       <!-- Ludopedia -->
@@ -208,6 +224,26 @@ async function abrirModalPerfil() {
   // Gera QR Code com o ID do usuário
   if (typeof _gerarQRCode === 'function') {
     await _gerarQRCode('perfilQRBox', `https://root-ligasp.vercel.app/?pid=${userId}`, 118);
+  }
+}
+
+async function _salvarNomeExibicao() {
+  const inp = document.getElementById('perfilDisplayName');
+  const el  = document.getElementById('perfilDisplayNameStatus');
+  const nome = inp?.value?.trim();
+  if (!el) return;
+  el.style.color = 'var(--text3)'; el.textContent = 'Salvando...';
+  try {
+    const sb = await initSupabase();
+    const { error } = await sb.auth.updateUser({ data: { display_name: nome || null } });
+    if (error) throw error;
+    // Atualiza currentUser em memória
+    if (currentUser?.user_metadata) currentUser.user_metadata.display_name = nome || undefined;
+    el.style.color = '#80d060'; el.textContent = '✓ Salvo';
+    renderAuthUI();
+    setTimeout(() => { if (el) el.textContent = ''; }, 2000);
+  } catch (e) {
+    el.style.color = '#f09080'; el.textContent = 'Erro: ' + e.message;
   }
 }
 

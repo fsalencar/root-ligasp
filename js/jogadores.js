@@ -53,7 +53,7 @@ function preencherSlotProprio() {
   if (typeof currentUser === 'undefined' || !currentUser) return;
   if (typeof numPlayers === 'undefined' || numPlayers === 0) return;
 
-  const nomeUser = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || '';
+  const nomeUser = currentUser.user_metadata?.display_name || currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || '';
   const ludoNome = (typeof ludoUser !== 'undefined') ? (ludoUser?.usuario || ludoUser?.nm_usuario || '') : '';
   const ludoId   = (typeof ludoUser !== 'undefined') ? ludoUser?.id_usuario : null;
 
@@ -511,8 +511,8 @@ function _renderFormJogador(id, nome, ludoUsuario, ludoId, slotIdxParaVincular) 
       </div>
 
       <div style="margin-bottom:0.75rem;">
-        <label style="font-family:sans-serif;font-size:0.75rem;color:var(--text3);display:block;margin-bottom:4px;">NOME *</label>
-        <input id="fjNome" type="text" placeholder="Nome do jogador" value="${nome}" style="width:100%;">
+        <label style="font-family:sans-serif;font-size:0.75rem;color:var(--text3);display:block;margin-bottom:4px;">NOME DE EXIBIÇÃO *</label>
+        <input id="fjNome" type="text" placeholder="Nome que aparece na partida" value="${nome}" style="width:100%;">
       </div>
 
       <div style="border-top:1px solid var(--border);padding-top:0.75rem;margin-bottom:0.5rem;">
