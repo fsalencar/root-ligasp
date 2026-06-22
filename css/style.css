@@ -711,11 +711,34 @@
     background: rgba(128,208,96,0.1);
   }
 
-  .seating-order-list {
+  .sorteio-seating-order-list {
     display: flex;
     flex-direction: column;
     gap: 8px;
     margin-top: 0.5rem;
+  }
+  .sorteio-seating-item {
+    cursor: grab;
+  }
+  .sorteio-seating-item.fixed {
+    cursor: default;
+    opacity: 0.95;
+    background: rgba(166,145,93,0.08);
+  }
+  .sorteio-seating-item:hover:not(.fixed) {
+    background: rgba(255,255,255,0.12);
+  }
+  .sorteio-start-order {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+  }
+  .sorteio-section-note {
+    font-size: 0.8rem;
+    color: var(--text3);
+    font-family: sans-serif;
+    margin-top: 0.6rem;
   }
   .seating-item {
     display: flex;

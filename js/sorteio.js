@@ -11,6 +11,57 @@ let sortearClareiras = false;
 let manterCantos = true;
 let sortearDeck = false;
 let minInsurgentes = 0; // 0=livre, 1=ao menos 1, 2=ao menos 2
+let _lastSeatingOrder = null;
+let _lastStartOrder = null;
+let _lastChosenMap = null;
+let _lastWasDrawn = false;
+let _lastClearingResult = null;
+let _lastChosenDeck = null;
+
+function computeSorteioStartOrder(seatingOrder) {
+  if (!Array.isArray(seatingOrder) || seatingOrder.length === 0) return [];
+  const [first, ...rest] = seatingOrder;
+  return [first, ...rest.slice().reverse()];
+}
+
+function onSorteioSeatingDragStart(event, idx) {
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', String(idx));
+}
+
+function onSorteioSeatingDragOver(event) {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+}
+
+function onSorteioSeatingDrop(event, targetIdx) {
+  event.preventDefault();
+  const sourceIdx = parseInt(event.dataTransfer.getData('text/plain'), 10);
+  if (Number.isNaN(sourceIdx) || sourceIdx === targetIdx || targetIdx === 0 || sourceIdx === 0) return;
+
+  const order = Array.isArray(_lastSeatingOrder) ? [..._lastSeatingOrder] : [];
+  if (!order.length || sourceIdx >= order.length || targetIdx >= order.length) return;
+
+  const [moved] = order.splice(sourceIdx, 1);
+  const insertAt = sourceIdx < targetIdx ? targetIdx - 1 : targetIdx;
+  order.splice(insertAt, 0, moved);
+  updateSorteioSeatingOrder(order);
+}
+
+function updateSorteioSeatingOrder(order) {
+  if (!Array.isArray(order) || !order.length) return;
+  _lastSeatingOrder = order;
+  _lastStartOrder = computeSorteioStartOrder(order);
+
+  if (typeof partidaAtual !== 'undefined' && partidaAtual) {
+    partidaAtual.seatingOrder = order.map(o => o.player);
+    partidaAtual.startOrder = _lastStartOrder.map(o => o.player);
+    partidaAtual.turnOrder = _lastStartOrder.map(o => o.player);
+    localStorage.setItem('partidaAtual', JSON.stringify(partidaAtual));
+  }
+
+  renderResult(_lastFacResult, _lastNames, _lastChosenMap, _lastWasDrawn, _lastClearingResult, _lastChosenDeck, _lastPlayerFaction);
+}
 
 // ===================== INIT =====================
 function init() {
@@ -424,6 +475,14 @@ function sortear() {
   const shuffledNames = shuffle(names);
   const playerFaction = {};
   facResult.turnOrder.forEach((fac, i) => { playerFaction[fac.id] = shuffledNames[i]; });
+  _lastSeatingOrder = facResult.turnOrder.map(f => ({
+    player: playerFaction[f.id],
+    facId: f.id,
+    facName: f.name,
+    type: f.type,
+    accent: f.accent,
+  }));
+  _lastStartOrder = computeSorteioStartOrder(_lastSeatingOrder);
 
   renderResult(facResult, names, chosenMap, mapArr.length > 1, clearingResult, chosenDeck, playerFaction);
   criarPartida(facResult, playerFaction, chosenMap, chosenDeck);
@@ -521,6 +580,10 @@ function renderResult(facResult, names, chosenMap, wasDrawn, clearingResult, cho
   _lastNames = names;
   _lastMap = chosenMap;
   _lastPlayerFaction = playerFaction || {};
+  _lastChosenMap = chosenMap;
+  _lastWasDrawn = wasDrawn;
+  _lastClearingResult = clearingResult;
+  _lastChosenDeck = chosenDeck;
   const section = document.getElementById('resultSection');
   const cards = document.getElementById('resultCards');
   const summary = document.getElementById('summaryBox');
@@ -600,22 +663,51 @@ function renderResult(facResult, names, chosenMap, wasDrawn, clearingResult, cho
     cards.appendChild(card);
   });
 
-  // Seção ordem de jogo
+  const seatingOrder = Array.isArray(_lastSeatingOrder) && _lastSeatingOrder.length === facResult.turnOrder.length
+    ? _lastSeatingOrder
+    : facResult.turnOrder.map(f => ({ player: playerFaction[f.id], facId: f.id, facName: f.name, type: f.type, accent: f.accent }));
+  const startOrder = Array.isArray(_lastStartOrder) && _lastStartOrder.length === seatingOrder.length
+    ? _lastStartOrder
+    : computeSorteioStartOrder(seatingOrder);
+
+  cards.insertAdjacentHTML('beforeend', `
+    <div class="divider-section" style="margin-top:2rem">
+      <div class="divider-label">Ordem da Mesa</div>
+      <hr class="divider-line">
+    </div>`);
+
+  seatingOrder.forEach((item, i) => {
+    const seat = document.createElement('div');
+    seat.className = `result-card faction-accent-${item.accent} seating-item${i===0 ? ' fixed' : ''}`;
+    seat.draggable = i > 0;
+    if (i > 0) {
+      seat.setAttribute('ondragstart', `onSorteioSeatingDragStart(event,${i})`);
+      seat.setAttribute('ondragover', `onSorteioSeatingDragOver(event)`);
+      seat.setAttribute('ondrop', `onSorteioSeatingDrop(event,${i})`);
+    }
+    seat.innerHTML = `
+      <div class="order-badge">${i+1}°</div>
+      <div class="card-player">${item.player}</div>
+      <div class="card-faction">${item.facName}</div>
+      <span class="card-type-badge ${item.type==='militant'?'badge-militant':'badge-insurgent'}">${item.type==='militant'?'⚔ Militante':'◆ Insurgente'}</span>
+      <div class="card-setup-order">${i===0 ? 'Primeiro jogador fixo' : 'Arraste para ajustar a mesa'}</div>`;
+    cards.appendChild(seat);
+  });
+
   cards.insertAdjacentHTML('beforeend', `
     <div class="divider-section" style="margin-top:2rem">
       <div class="divider-label">Ordem de Jogo (1º turno)</div>
       <hr class="divider-line">
     </div>`);
 
-  facResult.turnOrder.forEach((fac, i) => {
-    const player = playerFaction[fac.id];
+  startOrder.forEach((item, i) => {
     const card = document.createElement('div');
-    card.className = `result-card faction-accent-${fac.accent}`;
+    card.className = `result-card faction-accent-${item.accent}`;
     card.innerHTML = `
       <div class="order-badge">${i+1}°</div>
-      <div class="card-player">${player}</div>
-      <div class="card-faction">${fac.name}</div>
-      <span class="card-type-badge ${fac.type==='militant'?'badge-militant':'badge-insurgent'}">${fac.type==='militant'?'⚔ Militante':'◆ Insurgente'}</span>`;
+      <div class="card-player">${item.player}</div>
+      <div class="card-faction">${item.facName}</div>
+      <span class="card-type-badge ${item.type==='militant'?'badge-militant':'badge-insurgent'}">${item.type==='militant'?'⚔ Militante':'◆ Insurgente'}</span>`;
     cards.appendChild(card);
   });
 

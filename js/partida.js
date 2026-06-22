@@ -309,15 +309,14 @@ function renderPartidaAtiva(section) {
         <div class="section-title" style="margin-top:1.25rem;">Ordem da Mesa</div>
         <div id="seatingOrderList" class="seating-order-list">
           ${seatOrder.map((nome, i) => `
-            <div class="seating-item${i === 0 ? ' fixed' : ''}" draggable="${i === 0 ? 'false' : 'true'}" data-index="${i}"
-              ${i > 0 ? `ondragstart="onSeatingDragStart(event,${i})" ondragover="onSeatingDragOver(event)" ondrop="onSeatingDrop(event,${i})"` : ''}>
+            <div class="seating-item${i === 0 ? ' fixed' : ''}">
               <span class="seating-item-label">${i + 1}</span>
               <span class="seating-item-name">${nome}</span>
-              ${i > 0 ? '<span class="seating-item-handle" title="Arrastar para reordenar">⠿</span>' : '<span class="seating-item-anchor">primeiro fixo</span>'}
+              ${i > 0 ? '<span class="seating-item-anchor">posição fixa</span>' : '<span class="seating-item-anchor">primeiro fixo</span>'}
             </div>
           `).join('')}
         </div>
-        <div class="section-note">Primeiro jogador fixo; arraste os demais para ajustar a posição da mesa. A ordem de início de turno respeita o sentido anti-horário.</div>
+        <div class="section-note">Primeiro jogador fixo; os demais estão na ordem da mesa. A ordem de início de turno respeita o sentido anti-horário.</div>
       ` : ''}
 
       ${orderToShow && orderToShow.length > 0 ? `
