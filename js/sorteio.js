@@ -592,7 +592,7 @@ function _renderMesaRedonda(containerId, seats, interactive) {
   const TD = 90;
 
   el.innerHTML = '';
-  el.style.cssText = `position:relative;width:${W}px;height:${W}px;margin:0 auto;`;
+  el.style.cssText = `position:relative;width:${W}px;height:${W}px;margin:0 auto;touch-action:none;`;
 
   // Centro da mesa
   const center = document.createElement('div');
@@ -605,14 +605,31 @@ function _renderMesaRedonda(containerId, seats, interactive) {
     + `${interactive ? 'Prep.<br>Anti-horária' : 'Turno<br>Horário'}</span>`;
   el.appendChild(center);
 
-  let selectedIdx = null;
+  // Posições dos assentos (para detectar drop target durante drag)
+  const seatPos  = [];
+  const seatEls  = [];
+  let dragGhost  = null;
+  let dragSrcIdx = null;
+  let dragOffX   = 0, dragOffY = 0;
+  let dropTarget = null;
+
+  function clearDropHighlight() {
+    if (dropTarget !== null) {
+      seatEls[dropTarget].style.borderColor = 'var(--border)';
+      seatEls[dropTarget].style.background  = 'var(--surface2)';
+      dropTarget = null;
+    }
+  }
 
   seats.forEach((seat, i) => {
-    const rad  = (-90 + 360 / N * i) * Math.PI / 180;
+    // ↺ Anti-horário: subtrai o ângulo para ir da esquerda em vez da direita
+    const rad  = (-90 - 360 / N * i) * Math.PI / 180;
     const x    = cx + R * Math.cos(rad);
     const y    = cy + R * Math.sin(rad);
+    seatPos.push({ x, y });
+
     const isFirst    = i === 0;
-    const isClickable = interactive && !isFirst;
+    const isDraggable = interactive && !isFirst;
     const typeBg    = seat.type === 'militant' ? 'rgba(200,70,70,.85)' : 'rgba(50,150,80,.85)';
     const typeLabel = seat.type === 'militant' ? '⚔ Militante' : '◆ Insurgente';
 
@@ -622,7 +639,7 @@ function _renderMesaRedonda(containerId, seats, interactive) {
       + `background:${isFirst ? 'rgba(218,165,32,.15)' : 'var(--surface2)'};`
       + `border:1.5px solid ${isFirst ? 'rgba(218,165,32,.65)' : 'var(--border)'};`
       + `border-radius:8px;padding:5px 5px 4px;text-align:center;box-sizing:border-box;z-index:2;`
-      + `cursor:${isClickable ? 'pointer' : 'default'};transition:border-color .12s,background .12s,transform .1s;`;
+      + `cursor:${isDraggable ? 'grab' : 'default'};touch-action:none;`;
 
     div.innerHTML = `<div style="font-size:.6rem;color:${isFirst ? 'var(--gold)' : 'var(--text3)'};font-family:sans-serif;margin-bottom:2px;">`
       + `${seat.num}°${isFirst && interactive ? ' 📍' : ''}</div>`
@@ -638,31 +655,68 @@ function _renderMesaRedonda(containerId, seats, interactive) {
         ? `<div style="font-size:.52rem;color:var(--text3);font-family:sans-serif;margin-top:2px;">Alcance ${seat.reach}</div>`
         : '');
 
-    if (isClickable) {
-      div.addEventListener('mouseenter', () => { if (selectedIdx !== i) div.style.borderColor = 'rgba(218,165,32,.4)'; });
-      div.addEventListener('mouseleave', () => {
-        if (selectedIdx !== i) { div.style.borderColor = 'var(--border)'; div.style.background = 'var(--surface2)'; }
+    if (isDraggable) {
+      div.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        dragSrcIdx = i;
+        const rect = div.getBoundingClientRect();
+        dragOffX = e.clientX - rect.left;
+        dragOffY = e.clientY - rect.top;
+
+        // Fantasma de drag
+        dragGhost = div.cloneNode(true);
+        dragGhost.style.cssText += `;position:fixed;opacity:.78;pointer-events:none;z-index:9999;`
+          + `left:${rect.left}px;top:${rect.top}px;width:${SW}px;cursor:grabbing;`;
+        document.body.appendChild(dragGhost);
+        div.style.opacity = '.25';
+        div.setPointerCapture(e.pointerId);
       });
-      div.addEventListener('click', () => {
-        if (selectedIdx === null) {
-          selectedIdx = i;
-          div.style.borderColor = 'var(--gold)';
-          div.style.background   = 'rgba(218,165,32,.22)';
-          div.style.transform    = 'scale(1.06)';
-        } else if (selectedIdx === i) {
-          selectedIdx = null;
-          div.style.borderColor = 'var(--border)';
-          div.style.background  = 'var(--surface2)';
-          div.style.transform   = '';
-        } else {
-          const a = selectedIdx, b = i;
-          selectedIdx = null;
-          const newOrder = [..._lastSetupOrder];
-          [newOrder[a], newOrder[b]] = [newOrder[b], newOrder[a]];
-          updateSorteioSetupOrder(newOrder);
+
+      div.addEventListener('pointermove', (e) => {
+        if (dragSrcIdx !== i) return;
+        e.preventDefault();
+        dragGhost.style.left = (e.clientX - dragOffX) + 'px';
+        dragGhost.style.top  = (e.clientY - dragOffY) + 'px';
+
+        // Acha o assento mais próximo ao ponteiro dentro do contêiner
+        const elRect = el.getBoundingClientRect();
+        const px = e.clientX - elRect.left;
+        const py = e.clientY - elRect.top;
+        let bestIdx = null, bestDist = R * 0.9;
+        seatPos.forEach((pos, j) => {
+          if (j === 0 || j === dragSrcIdx) return;
+          const d = Math.hypot(px - pos.x, py - pos.y);
+          if (d < bestDist) { bestDist = d; bestIdx = j; }
+        });
+
+        if (bestIdx !== dropTarget) {
+          clearDropHighlight();
+          dropTarget = bestIdx;
+          if (dropTarget !== null) {
+            seatEls[dropTarget].style.borderColor = 'var(--gold)';
+            seatEls[dropTarget].style.background  = 'rgba(218,165,32,.22)';
+          }
         }
       });
+
+      const onEnd = () => {
+        if (dragSrcIdx !== i) return;
+        div.style.opacity = '';
+        if (dragGhost) { dragGhost.remove(); dragGhost = null; }
+        const target = dropTarget;
+        clearDropHighlight();
+        dragSrcIdx = null;
+        if (target !== null) {
+          const newOrder = [..._lastSetupOrder];
+          [newOrder[i], newOrder[target]] = [newOrder[target], newOrder[i]];
+          updateSorteioSetupOrder(newOrder);
+        }
+      };
+      div.addEventListener('pointerup',     onEnd);
+      div.addEventListener('pointercancel', onEnd);
     }
+
+    seatEls.push(div);
     el.appendChild(div);
   });
 }
