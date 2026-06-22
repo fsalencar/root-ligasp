@@ -4,48 +4,12 @@ let partidaAtual = null;
 let timerInterval = null;
 let estadoPartida = 'ativo'; // 'ativo' | 'formulario' | 'resultado'
 let resultadoGerado = null;
-let _dragSourceSeatingIndex = null;
 let _dragSourceSetupIndex = null;
 
 function computeStartOrder(seatingOrder) {
   if (!Array.isArray(seatingOrder) || seatingOrder.length === 0) return [];
   const [first, ...rest] = seatingOrder;
   return [first, ...rest.slice().reverse()];
-}
-
-function onSeatingDragStart(event, idx) {
-  _dragSourceSeatingIndex = idx;
-  event.dataTransfer.effectAllowed = 'move';
-  event.dataTransfer.setData('text/plain', String(idx));
-}
-
-function onSeatingDragOver(event) {
-  event.preventDefault();
-  event.dataTransfer.dropEffect = 'move';
-}
-
-function onSeatingDrop(event, targetIdx) {
-  event.preventDefault();
-  if (_dragSourceSeatingIndex === null || _dragSourceSeatingIndex === targetIdx) return;
-  if (_dragSourceSeatingIndex === 0 || targetIdx === 0) return;
-
-  const order = Array.isArray(partidaAtual?.seatingOrder)
-    ? [...partidaAtual.seatingOrder]
-    : [];
-  if (!order.length || _dragSourceSeatingIndex >= order.length || targetIdx >= order.length) return;
-
-  const [moved] = order.splice(_dragSourceSeatingIndex, 1);
-  const insertAt = _dragSourceSeatingIndex < targetIdx ? targetIdx - 1 : targetIdx;
-  order.splice(insertAt, 0, moved);
-  updateSeatingOrder(order);
-}
-
-function updateSeatingOrder(order) {
-  if (!Array.isArray(order) || !order.length || !partidaAtual) return;
-  partidaAtual.seatingOrder = order;
-  partidaAtual.startOrder = computeStartOrder(order);
-  localStorage.setItem('partidaAtual', JSON.stringify(partidaAtual));
-  renderPartida();
 }
 
 function onSetupDragStart(event, idx) {
@@ -85,23 +49,25 @@ function updateSetupOrder(order) {
 
 function criarPartida(facResult, playerFaction, mapa, deck) {
   // playerFaction: { factionId: playerName } — mapeamento já computado em sortear()
-  const jogadores = facResult.setupOrder.map((fac) => ({
+  // Ordem de preparação (setupOrder) é também a ordem da mesa
+  const setupOrder = facResult.setupOrder.map((fac) => ({
     nome: playerFaction[fac.id] || fac.name,
     faccao: fac.name,
     faccaoId: fac.id,
     tipo: fac.type,
   }));
 
-  const seatingOrder = facResult.turnOrder.map(fac => playerFaction[fac.id] || fac.name);
+  const seatingOrder = setupOrder.map(j => j.nome);
   const startOrder = computeStartOrder(seatingOrder);
 
   partidaAtual = {
-    jogadores,
+    jogadores: setupOrder,
     mapa: mapa.name,
     mapaIcon: mapa.icon,
     deck: deck || null,
     seatingOrder,
     startOrder,
+    turno: 0,
     inicio: new Date().toISOString(),
   };
 
@@ -312,11 +278,10 @@ function renderPartidaAtiva(section) {
             <div class="seating-item${i === 0 ? ' fixed' : ''}">
               <span class="seating-item-label">${i + 1}</span>
               <span class="seating-item-name">${nome}</span>
-              ${i > 0 ? '<span class="seating-item-anchor">posição fixa</span>' : '<span class="seating-item-anchor">primeiro fixo</span>'}
+              <span class="seating-item-anchor">${i === 0 ? 'primeiro fixo' : 'posição'}</span>
             </div>
           `).join('')}
         </div>
-        <div class="section-note">Primeiro jogador fixo; os demais estão na ordem da mesa. A ordem de início de turno respeita o sentido anti-horário.</div>
       ` : ''}
 
       ${orderToShow && orderToShow.length > 0 ? `
