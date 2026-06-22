@@ -1,0 +1,257 @@
+﻿diff --git a/css/style.css b/css/style.css
+index 6ca2f62..5ce3125 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -677,10 +677,101 @@
+ 
+   .player-slot-badge { min-height: 0; }
+   .slot-badge-ludo {
+-    display: inline-block;
+-    font-family: sans-serif; font-size: 0.7rem; color: #80d060;
++    display: inline-flex;
++    align-items: center;
++    gap: 6px;
++    font-family: sans-serif;
++    font-size: 0.7rem;
++    color: #80d060;
+     margin-bottom: 3px;
+   }
++  .slot-badge-ludo-id {
++    display: block;
++    font-family: sans-serif;
++    font-size: 0.68rem;
++    color: var(--text3);
++    margin-top: 2px;
++  }
++  .slot-badge-remove {
++    background: transparent;
++    border: 1px solid rgba(128,208,96,0.4);
++    color: #80d060;
++    border-radius: 50%;
++    width: 18px;
++    height: 18px;
++    display: inline-flex;
++    align-items: center;
++    justify-content: center;
++    cursor: pointer;
++    font-size: 0.85rem;
++    line-height: 1;
++    padding: 0;
++  }
++  .slot-badge-remove:hover {
++    background: rgba(128,208,96,0.1);
++  }
++
++  .seating-order-list {
++    display: flex;
++    flex-direction: column;
++    gap: 8px;
++    margin-top: 0.5rem;
++  }
++  .seating-item {
++    display: flex;
++    align-items: center;
++    gap: 10px;
++    padding: 10px 12px;
++    border: 1px solid var(--border);
++    border-radius: 12px;
++    background: var(--surface2);
++    cursor: grab;
++  }
++  .seating-item.fixed {
++    cursor: default;
++    opacity: 0.95;
++    background: rgba(166,145,93,0.08);
++  }
++  .seating-item:hover:not(.fixed) {
++    background: rgba(255,255,255,0.12);
++  }
++  .seating-item-label {
++    width: 28px;
++    height: 28px;
++    border-radius: 50%;
++    background: var(--surface);
++    border: 1px solid var(--border2);
++    display: flex;
++    align-items: center;
++    justify-content: center;
++    font-size: 0.78rem;
++    color: var(--text3);
++    flex-shrink: 0;
++  }
++  .seating-item-name {
++    flex: 1;
++    min-width: 0;
++    font-family: sans-serif;
++    font-size: 0.92rem;
++    color: var(--text);
++  }
++  .seating-item-handle {
++    font-size: 1rem;
++    color: var(--text3);
++    cursor: grab;
++    flex-shrink: 0;
++  }
++  .seating-item-anchor {
++    font-size: 0.72rem;
++    color: var(--text3);
++    white-space: nowrap;
++  }
++  .section-note {
++    font-size: 0.8rem;
++    color: var(--text3);
++    font-family: sans-serif;
++    margin-top: 0.6rem;
++  }
+ 
+   /* ÔöÇÔöÇ Painel inline de sele├º├úo por slot ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
+   .slot-painel {
+diff --git a/js/jogadores.js b/js/jogadores.js
+index a7ad826..2369a93 100644
+--- a/js/jogadores.js
++++ b/js/jogadores.js
+@@ -107,8 +107,15 @@ function _refreshSlotBadge(i) {
+   const el = document.getElementById('playerSlotBadge_' + i);
+   if (!el) return;
+   const ludo = _playerLudoSlot[i];
+-  if (ludo?.ludopedia_usuario) {
+-    el.innerHTML = `<span class="slot-badge-ludo">­ƒÄ▓ ${ludo.ludopedia_usuario}</span>`;
++  if (ludo?.ludopedia_usuario || ludo?.ludopedia_id) {
++    const title = ludo.ludopedia_usuario ? `­ƒÄ▓ ${ludo.ludopedia_usuario}` : '­ƒÄ▓ Ludopedia';
++    const idLine = ludo.ludopedia_id ? `<div class="slot-badge-ludo-id">ID: ${ludo.ludopedia_id}</div>` : '';
++    el.innerHTML = `
++      <div class="slot-badge-ludo">
++        <span>${title}</span>
++        ${ludo.ludopedia_id ? `<button type="button" class="slot-badge-remove" onclick="limparSlotLudo(${i})" title="Remover v├¡nculo Ludopedia">├ù</button>` : ''}
++      </div>
++      ${idLine}`;
+   } else {
+     el.innerHTML = '';
+   }
+diff --git a/js/partida.js b/js/partida.js
+index f3d039a..a5be7db 100644
+--- a/js/partida.js
++++ b/js/partida.js
+@@ -4,6 +4,48 @@ let partidaAtual = null;
+ let timerInterval = null;
+ let estadoPartida = 'ativo'; // 'ativo' | 'formulario' | 'resultado'
+ let resultadoGerado = null;
++let _dragSourceSeatingIndex = null;
++
++function computeStartOrder(seatingOrder) {
++  if (!Array.isArray(seatingOrder) || seatingOrder.length === 0) return [];
++  const [first, ...rest] = seatingOrder;
++  return [first, ...rest.slice().reverse()];
++}
++
++function onSeatingDragStart(event, idx) {
++  _dragSourceSeatingIndex = idx;
++  event.dataTransfer.effectAllowed = 'move';
++  event.dataTransfer.setData('text/plain', String(idx));
++}
++
++function onSeatingDragOver(event) {
++  event.preventDefault();
++  event.dataTransfer.dropEffect = 'move';
++}
++
++function onSeatingDrop(event, targetIdx) {
++  event.preventDefault();
++  if (_dragSourceSeatingIndex === null || _dragSourceSeatingIndex === targetIdx) return;
++  if (_dragSourceSeatingIndex === 0 || targetIdx === 0) return;
++
++  const order = Array.isArray(partidaAtual?.seatingOrder)
++    ? [...partidaAtual.seatingOrder]
++    : [];
++  if (!order.length || _dragSourceSeatingIndex >= order.length || targetIdx >= order.length) return;
++
++  const [moved] = order.splice(_dragSourceSeatingIndex, 1);
++  const insertAt = _dragSourceSeatingIndex < targetIdx ? targetIdx - 1 : targetIdx;
++  order.splice(insertAt, 0, moved);
++  updateSeatingOrder(order);
++}
++
++function updateSeatingOrder(order) {
++  if (!Array.isArray(order) || !order.length || !partidaAtual) return;
++  partidaAtual.seatingOrder = order;
++  partidaAtual.startOrder = computeStartOrder(order);
++  localStorage.setItem('partidaAtual', JSON.stringify(partidaAtual));
++  renderPartida();
++}
+ 
+ // ÔöÇÔöÇ Criar / Restaurar ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+ 
+@@ -16,14 +58,16 @@ function criarPartida(facResult, playerFaction, mapa, deck) {
+     tipo: fac.type,
+   }));
+ 
+-  const turnOrder = facResult.turnOrder.map(fac => playerFaction[fac.id] || fac.name);
++  const seatingOrder = facResult.turnOrder.map(fac => playerFaction[fac.id] || fac.name);
++  const startOrder = computeStartOrder(seatingOrder);
+ 
+   partidaAtual = {
+     jogadores,
+     mapa: mapa.name,
+     mapaIcon: mapa.icon,
+     deck: deck || null,
+-    turnOrder,
++    seatingOrder,
++    startOrder,
+     inicio: new Date().toISOString(),
+   };
+ 
+@@ -41,6 +85,14 @@ function restaurarPartidaSeExistir() {
+   if (!saved) return;
+   try {
+     partidaAtual = JSON.parse(saved);
++    if (partidaAtual) {
++      if (!Array.isArray(partidaAtual.seatingOrder) && Array.isArray(partidaAtual.turnOrder)) {
++        partidaAtual.seatingOrder = [...partidaAtual.turnOrder];
++      }
++      if (Array.isArray(partidaAtual.seatingOrder) && !Array.isArray(partidaAtual.startOrder)) {
++        partidaAtual.startOrder = computeStartOrder(partidaAtual.seatingOrder);
++      }
++    }
+     estadoPartida = 'ativo';
+     atualizarBadgePartida(true);
+   } catch (e) {
+@@ -179,7 +231,9 @@ function renderPartida() {
+ // ÔöÇÔöÇ Partida ativa (com timer) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+ 
+ function renderPartidaAtiva(section) {
+-  const { jogadores, mapa, mapaIcon, deck, turnOrder } = partidaAtual;
++  const { jogadores, mapa, mapaIcon, deck, seatingOrder, startOrder } = partidaAtual;
++  const seatOrder = Array.isArray(seatingOrder) ? seatingOrder : [];
++  const orderToShow = Array.isArray(startOrder) ? startOrder : computeStartOrder(seatOrder);
+ 
+   section.innerHTML = `
+     <div class="section">
+@@ -213,10 +267,25 @@ function renderPartidaAtiva(section) {
+         </div>
+       `).join('')}
+ 
+-      ${turnOrder && turnOrder.length > 0 ? `
+-        <div class="section-title" style="margin-top:1.25rem;">Ordem de Turno</div>
++      ${seatOrder.length > 0 ? `
++        <div class="section-title" style="margin-top:1.25rem;">Ordem da Mesa</div>
++        <div id="seatingOrderList" class="seating-order-list">
++          ${seatOrder.map((nome, i) => `
++            <div class="seating-item${i === 0 ? ' fixed' : ''}" draggable="${i === 0 ? 'false' : 'true'}" data-index="${i}"
++              ${i > 0 ? `ondragstart="onSeatingDragStart(event,${i})" ondragover="onSeatingDragOver(event)" ondrop="onSeatingDrop(event,${i})"` : ''}>
++              <span class="seating-item-label">${i + 1}</span>
++              <span class="seating-item-name">${nome}</span>
++              ${i > 0 ? '<span class="seating-item-handle" title="Arrastar para reordenar">Ôá┐</span>' : '<span class="seating-item-anchor">primeiro fixo</span>'}
++            </div>
++          `).join('')}
++        </div>
++        <div class="section-note">Primeiro jogador fixo; arraste os demais para ajustar a posi├º├úo da mesa. A ordem de in├¡cio de turno respeita o sentido anti-hor├írio.</div>
++      ` : ''}
++
++      ${orderToShow && orderToShow.length > 0 ? `
++        <div class="section-title" style="margin-top:1.5rem;">Ordem de Turno</div>
+         <div style="display:flex;gap:8px;flex-wrap:wrap;">
+-          ${turnOrder.map((nome, i) => `
++          ${orderToShow.map((nome, i) => `
+             <div style="padding:5px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;font-size:0.82rem;font-family:sans-serif;color:var(--text2);">${i + 1}. ${nome}</div>
+           `).join('')}
+         </div>

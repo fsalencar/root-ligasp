@@ -677,9 +677,100 @@
 
   .player-slot-badge { min-height: 0; }
   .slot-badge-ludo {
-    display: inline-block;
-    font-family: sans-serif; font-size: 0.7rem; color: #80d060;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: sans-serif;
+    font-size: 0.7rem;
+    color: #80d060;
     margin-bottom: 3px;
+  }
+  .slot-badge-ludo-id {
+    display: block;
+    font-family: sans-serif;
+    font-size: 0.68rem;
+    color: var(--text3);
+    margin-top: 2px;
+  }
+  .slot-badge-remove {
+    background: transparent;
+    border: 1px solid rgba(128,208,96,0.4);
+    color: #80d060;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+    padding: 0;
+  }
+  .slot-badge-remove:hover {
+    background: rgba(128,208,96,0.1);
+  }
+
+  .seating-order-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 0.5rem;
+  }
+  .seating-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface2);
+    cursor: grab;
+  }
+  .seating-item.fixed {
+    cursor: default;
+    opacity: 0.95;
+    background: rgba(166,145,93,0.08);
+  }
+  .seating-item:hover:not(.fixed) {
+    background: rgba(255,255,255,0.12);
+  }
+  .seating-item-label {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    color: var(--text3);
+    flex-shrink: 0;
+  }
+  .seating-item-name {
+    flex: 1;
+    min-width: 0;
+    font-family: sans-serif;
+    font-size: 0.92rem;
+    color: var(--text);
+  }
+  .seating-item-handle {
+    font-size: 1rem;
+    color: var(--text3);
+    cursor: grab;
+    flex-shrink: 0;
+  }
+  .seating-item-anchor {
+    font-size: 0.72rem;
+    color: var(--text3);
+    white-space: nowrap;
+  }
+  .section-note {
+    font-size: 0.8rem;
+    color: var(--text3);
+    font-family: sans-serif;
+    margin-top: 0.6rem;
   }
 
   /* ── Painel inline de seleção por slot ──────────── */

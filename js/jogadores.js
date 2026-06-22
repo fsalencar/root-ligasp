@@ -107,8 +107,15 @@ function _refreshSlotBadge(i) {
   const el = document.getElementById('playerSlotBadge_' + i);
   if (!el) return;
   const ludo = _playerLudoSlot[i];
-  if (ludo?.ludopedia_usuario) {
-    el.innerHTML = `<span class="slot-badge-ludo">🎲 ${ludo.ludopedia_usuario}</span>`;
+  if (ludo?.ludopedia_usuario || ludo?.ludopedia_id) {
+    const title = ludo.ludopedia_usuario ? `🎲 ${ludo.ludopedia_usuario}` : '🎲 Ludopedia';
+    const idLine = ludo.ludopedia_id ? `<div class="slot-badge-ludo-id">ID: ${ludo.ludopedia_id}</div>` : '';
+    el.innerHTML = `
+      <div class="slot-badge-ludo">
+        <span>${title}</span>
+        ${ludo.ludopedia_id ? `<button type="button" class="slot-badge-remove" onclick="limparSlotLudo(${i})" title="Remover vínculo Ludopedia">×</button>` : ''}
+      </div>
+      ${idLine}`;
   } else {
     el.innerHTML = '';
   }

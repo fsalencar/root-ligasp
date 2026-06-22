@@ -4,6 +4,48 @@ let partidaAtual = null;
 let timerInterval = null;
 let estadoPartida = 'ativo'; // 'ativo' | 'formulario' | 'resultado'
 let resultadoGerado = null;
+let _dragSourceSeatingIndex = null;
+
+function computeStartOrder(seatingOrder) {
+  if (!Array.isArray(seatingOrder) || seatingOrder.length === 0) return [];
+  const [first, ...rest] = seatingOrder;
+  return [first, ...rest.slice().reverse()];
+}
+
+function onSeatingDragStart(event, idx) {
+  _dragSourceSeatingIndex = idx;
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', String(idx));
+}
+
+function onSeatingDragOver(event) {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+}
+
+function onSeatingDrop(event, targetIdx) {
+  event.preventDefault();
+  if (_dragSourceSeatingIndex === null || _dragSourceSeatingIndex === targetIdx) return;
+  if (_dragSourceSeatingIndex === 0 || targetIdx === 0) return;
+
+  const order = Array.isArray(partidaAtual?.seatingOrder)
+    ? [...partidaAtual.seatingOrder]
+    : [];
+  if (!order.length || _dragSourceSeatingIndex >= order.length || targetIdx >= order.length) return;
+
+  const [moved] = order.splice(_dragSourceSeatingIndex, 1);
+  const insertAt = _dragSourceSeatingIndex < targetIdx ? targetIdx - 1 : targetIdx;
+  order.splice(insertAt, 0, moved);
+  updateSeatingOrder(order);
+}
+
+function updateSeatingOrder(order) {
+  if (!Array.isArray(order) || !order.length || !partidaAtual) return;
+  partidaAtual.seatingOrder = order;
+  partidaAtual.startOrder = computeStartOrder(order);
+  localStorage.setItem('partidaAtual', JSON.stringify(partidaAtual));
+  renderPartida();
+}
 
 // ── Criar / Restaurar ────────────────────────────────────────────────────────
 
@@ -16,14 +58,16 @@ function criarPartida(facResult, playerFaction, mapa, deck) {
     tipo: fac.type,
   }));
 
-  const turnOrder = facResult.turnOrder.map(fac => playerFaction[fac.id] || fac.name);
+  const seatingOrder = facResult.turnOrder.map(fac => playerFaction[fac.id] || fac.name);
+  const startOrder = computeStartOrder(seatingOrder);
 
   partidaAtual = {
     jogadores,
     mapa: mapa.name,
     mapaIcon: mapa.icon,
     deck: deck || null,
-    turnOrder,
+    seatingOrder,
+    startOrder,
     inicio: new Date().toISOString(),
   };
 
@@ -41,6 +85,14 @@ function restaurarPartidaSeExistir() {
   if (!saved) return;
   try {
     partidaAtual = JSON.parse(saved);
+    if (partidaAtual) {
+      if (!Array.isArray(partidaAtual.seatingOrder) && Array.isArray(partidaAtual.turnOrder)) {
+        partidaAtual.seatingOrder = [...partidaAtual.turnOrder];
+      }
+      if (Array.isArray(partidaAtual.seatingOrder) && !Array.isArray(partidaAtual.startOrder)) {
+        partidaAtual.startOrder = computeStartOrder(partidaAtual.seatingOrder);
+      }
+    }
     estadoPartida = 'ativo';
     atualizarBadgePartida(true);
   } catch (e) {
@@ -179,7 +231,9 @@ function renderPartida() {
 // ── Partida ativa (com timer) ─────────────────────────────────────────────────
 
 function renderPartidaAtiva(section) {
-  const { jogadores, mapa, mapaIcon, deck, turnOrder } = partidaAtual;
+  const { jogadores, mapa, mapaIcon, deck, seatingOrder, startOrder } = partidaAtual;
+  const seatOrder = Array.isArray(seatingOrder) ? seatingOrder : [];
+  const orderToShow = Array.isArray(startOrder) ? startOrder : computeStartOrder(seatOrder);
 
   section.innerHTML = `
     <div class="section">
@@ -213,10 +267,25 @@ function renderPartidaAtiva(section) {
         </div>
       `).join('')}
 
-      ${turnOrder && turnOrder.length > 0 ? `
-        <div class="section-title" style="margin-top:1.25rem;">Ordem de Turno</div>
+      ${seatOrder.length > 0 ? `
+        <div class="section-title" style="margin-top:1.25rem;">Ordem da Mesa</div>
+        <div id="seatingOrderList" class="seating-order-list">
+          ${seatOrder.map((nome, i) => `
+            <div class="seating-item${i === 0 ? ' fixed' : ''}" draggable="${i === 0 ? 'false' : 'true'}" data-index="${i}"
+              ${i > 0 ? `ondragstart="onSeatingDragStart(event,${i})" ondragover="onSeatingDragOver(event)" ondrop="onSeatingDrop(event,${i})"` : ''}>
+              <span class="seating-item-label">${i + 1}</span>
+              <span class="seating-item-name">${nome}</span>
+              ${i > 0 ? '<span class="seating-item-handle" title="Arrastar para reordenar">⠿</span>' : '<span class="seating-item-anchor">primeiro fixo</span>'}
+            </div>
+          `).join('')}
+        </div>
+        <div class="section-note">Primeiro jogador fixo; arraste os demais para ajustar a posição da mesa. A ordem de início de turno respeita o sentido anti-horário.</div>
+      ` : ''}
+
+      ${orderToShow && orderToShow.length > 0 ? `
+        <div class="section-title" style="margin-top:1.5rem;">Ordem de Turno</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          ${turnOrder.map((nome, i) => `
+          ${orderToShow.map((nome, i) => `
             <div style="padding:5px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;font-size:0.82rem;font-family:sans-serif;color:var(--text2);">${i + 1}. ${nome}</div>
           `).join('')}
         </div>
