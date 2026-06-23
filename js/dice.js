@@ -1,10 +1,11 @@
 // Dados Root — Three.js ES Module
+// Dodecaedro (12 faces) com textura por face e face-up exata
 const ROOT_FACES = [0, 0, 1, 1, 2, 3];
 
-// BoxGeometry fallback face layout [+x,-x,+y,-y,+z,-z]
-const BOX_FACE_VALUES = [3, 0, 2, 1, 1, 0];
+// 12 faces do dodecaedro — distribuição igual ao dado Root (0×4, 1×4, 2×2, 3×2)
+const FACE_VALUES_12 = [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3];
 
-let THREE = null, STLLoader = null;
+let THREE = null;
 let renderer = null, scene = null, camera = null;
 let dice = [];
 let animFrame = null;
@@ -12,29 +13,25 @@ let rolling = false, rollT = 0, rollResults = [], pulsed = false;
 let landingStarted = false, landQuatStarts = [], targetQuats = [];
 let showingResult = false;
 let lastTs = 0, ready = false;
-let diceMode = 'batalha';   // 'batalha' | 'capanga'
-let colorScheme = 'white';  // 'white' | 'black'
-let geoMap = { batalha: null, capanga: null };  // geometrias STL carregadas
+let diceMode = 'batalha';
+let colorScheme = 'white';
+let dodecaGeo = null;
+let dodecaFaceNormals = [];   // normal de cada face (dir. do centroide)
 
 const ease    = t => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
 const easeOut = t => 1 - Math.pow(1 - t, 3);
 const LAND_T  = 0.60;
 
 const SCHEMES = {
-  white: { body: '#f0ede8', num: '#111111', roughness: 0.35, metalness: 0.05 },
-  black: { body: '#1a1209', num: '#c8a050', roughness: 0.25, metalness: 0.20 },
+  white: { body: '#f5f5f0', num: '#111111' },
+  black: { body: '#1a1209', num: '#c8a050' },
 };
 
-// ── Three.js + STLLoader lazy load ────────────────────────────────────────────
+// ── Three.js lazy load ────────────────────────────────────────────────────────
 async function ensureThree() {
   if (THREE) return true;
   try {
-    const [threeModule, stlModule] = await Promise.all([
-      import('three'),
-      import('three/addons/loaders/STLLoader.js'),
-    ]);
-    THREE     = threeModule;
-    STLLoader = stlModule.STLLoader;
+    THREE = await import('three');
     return true;
   } catch(e) {
     const el = document.getElementById('diceStatus');
@@ -43,119 +40,138 @@ async function ensureThree() {
   }
 }
 
-// ── Carrega geometria STL ─────────────────────────────────────────────────────
-function loadSTLGeo(url) {
-  return new Promise(resolve => {
-    try {
-      new STLLoader().load(url, geo => {
-        geo.computeVertexNormals();
-        geo.center();
-        const box = new THREE.Box3().setFromObject(new THREE.Mesh(geo));
-        const sz  = new THREE.Vector3(); box.getSize(sz);
-        const s   = 1.3 / Math.max(sz.x, sz.y, sz.z);
-        geo.scale(s, s, s);
-        resolve(geo);
-      }, undefined, () => resolve(null));
-    } catch { resolve(null); }
-  });
-}
-
-// ── Canvas texture (fallback box) ─────────────────────────────────────────────
+// ── Textura canvas para uma face ──────────────────────────────────────────────
 function makeFaceTex(value, bodyColor, numColor) {
   const c = document.createElement('canvas');
   c.width = c.height = 256;
   const ctx = c.getContext('2d');
   ctx.fillStyle = bodyColor;
   ctx.fillRect(0, 0, 256, 256);
-  ctx.strokeStyle = numColor; ctx.lineWidth = 14;
-  ctx.beginPath();
-  const r=38, x=7, y=7, w=242, h=242;
-  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
-  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
-  ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
-  ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
-  ctx.closePath(); ctx.stroke();
   ctx.fillStyle = numColor;
-  ctx.font = 'bold 148px Georgia,serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(String(value), 128, 128);
+  ctx.font = 'bold 158px Georgia,serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(String(value), 128, 132);
   return new THREE.CanvasTexture(c);
 }
 
-// ── Cria dado a partir de geometria STL ──────────────────────────────────────
-function makeDieSTL(geo) {
-  const s = SCHEMES[colorScheme];
-  const mat = new THREE.MeshStandardMaterial({
-    color: s.body, roughness: s.roughness, metalness: s.metalness,
-  });
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.rotation.set(Math.random()*6, Math.random()*6, Math.random()*6);
-  mesh._isSTL = true;
-  return mesh;
+// ── Geometria dodecaedro com 12 grupos de material + UV por face ──────────────
+function buildDodecaGeo() {
+  const base = new THREE.DodecahedronGeometry(0.90, 0);
+  const geo  = base.toNonIndexed();
+  base.dispose();
+
+  const pos   = geo.attributes.position;
+  const nV    = pos.count; // 108
+  const uvArr = new Float32Array(nV * 2);
+  dodecaFaceNormals = [];
+
+  for (let f = 0; f < 12; f++) {
+    const ofs = f * 9;
+
+    // centroide da face
+    let cx = 0, cy = 0, cz = 0;
+    for (let v = 0; v < 9; v++) {
+      cx += pos.getX(ofs + v);
+      cy += pos.getY(ofs + v);
+      cz += pos.getZ(ofs + v);
+    }
+    cx /= 9; cy /= 9; cz /= 9;
+
+    // normal = centroide normalizado (dado convexo centralizado na origem)
+    const len = Math.sqrt(cx*cx + cy*cy + cz*cz) || 1;
+    dodecaFaceNormals.push(new THREE.Vector3(cx/len, cy/len, cz/len));
+
+    // base tangente para projetar UV
+    const nx = cx/len, ny = cy/len, nz = cz/len;
+    let tx, ty = 0, tz;
+    if (Math.abs(ny) < 0.9) { tx = -nz; tz = nx; }
+    else                     { tx = 1;   tz = 0;  }
+    const tl = Math.sqrt(tx*tx + tz*tz) || 1;
+    tx /= tl; tz /= tl;
+    const bx = ny*tz - nz*ty;
+    const by = nz*tx - nx*tz;
+    const bz = nx*ty - ny*tx;
+
+    const us = [], vs = [];
+    for (let v = 0; v < 9; v++) {
+      const dx = pos.getX(ofs+v) - cx;
+      const dy = pos.getY(ofs+v) - cy;
+      const dz = pos.getZ(ofs+v) - cz;
+      us.push(dx*tx + dy*ty + dz*tz);
+      vs.push(dx*bx + dy*by + dz*bz);
+    }
+    const minU = Math.min(...us), maxU = Math.max(...us);
+    const minV = Math.min(...vs), maxV = Math.max(...vs);
+    const sc   = Math.max(maxU - minU, maxV - minV) || 1;
+    const midU = (minU + maxU) / 2, midV = (minV + maxV) / 2;
+
+    for (let v = 0; v < 9; v++) {
+      uvArr[(ofs+v)*2]     = (us[v] - midU) / sc * 0.88 + 0.5;
+      uvArr[(ofs+v)*2 + 1] = (vs[v] - midV) / sc * 0.88 + 0.5;
+    }
+
+    geo.addGroup(ofs, 9, f);
+  }
+
+  geo.setAttribute('uv', new THREE.BufferAttribute(uvArr, 2));
+  geo.computeVertexNormals();
+  dodecaGeo = geo;
 }
 
-// ── Cria dado fallback (BoxGeometry com texturas) ─────────────────────────────
-function makeDieBox() {
+// ── Quaternion que coloca 'value' com face pra cima (+Y) ──────────────────────
+function getTargetQuat(value) {
+  const yUp = new THREE.Vector3(0, 1, 0);
+  const candidates = FACE_VALUES_12
+    .map((v, i) => v === value ? i : -1)
+    .filter(i => i >= 0);
+  const fi = candidates[Math.floor(Math.random() * candidates.length)];
+  const fn = dodecaFaceNormals[fi];
+  const q1 = new THREE.Quaternion().setFromUnitVectors(fn, yUp);
+  // rotação extra em Y (múltiplos de 72° — simetria do pentágono)
+  const rY = Math.floor(Math.random() * 5) * (2 * Math.PI / 5);
+  const q2 = new THREE.Quaternion().setFromAxisAngle(yUp, rY);
+  return q2.multiply(q1);
+}
+
+// ── Cria um dado (mesh com 12 materiais) ──────────────────────────────────────
+function makeDie() {
   const { body, num } = SCHEMES[colorScheme];
-  const mats = BOX_FACE_VALUES.map(v =>
+  const mats = FACE_VALUES_12.map(v =>
     new THREE.MeshStandardMaterial({ map: makeFaceTex(v, body, num), roughness: 0.30, metalness: 0.05 })
   );
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), mats);
+  const mesh = new THREE.Mesh(dodecaGeo, mats);
   mesh.rotation.set(Math.random()*6, Math.random()*6, Math.random()*6);
   return mesh;
-}
-
-// ── Rotação alvo para que 'value' fique com face pra cima (+Y) ────────────────
-// Válido para BoxGeometry: +X=3, -X=0, +Y=2, -Y=1
-// Para STL, a face de cima pode não coincidir exatamente (depende da orientação do modelo).
-function getFaceUpEuler(value) {
-  const rY = Math.floor(Math.random() * 4) * Math.PI / 2;
-  switch(value) {
-    case 0: return new THREE.Euler(0, rY, -Math.PI / 2);
-    case 1: return new THREE.Euler(0, rY,  Math.PI);
-    case 2: return new THREE.Euler(0, rY,  0);
-    case 3: return new THREE.Euler(0, rY,  Math.PI / 2);
-    default: return new THREE.Euler(0, rY, 0);
-  }
 }
 
 // ── Monta dados na cena ───────────────────────────────────────────────────────
 function setupDice() {
-  dice.forEach(d => scene.remove(d));
+  dice.forEach(d => {
+    scene.remove(d);
+    if (Array.isArray(d.material)) {
+      d.material.forEach(m => { m.map?.dispose(); m.dispose(); });
+    }
+  });
   dice = [];
 
   if (diceMode === 'batalha') {
-    const geo = geoMap.batalha;
-    const d1 = geo ? makeDieSTL(geo) : makeDieBox();
-    const d2 = geo ? makeDieSTL(geo) : makeDieBox();
-    d1.position.set(-1.65, 0, 0);
-    d2.position.set( 1.65, 0, 0);
-    scene.add(d1, d2); dice.push(d1, d2);
+    const d1 = makeDie(); d1.position.set(-1.65, 0, 0); scene.add(d1); dice.push(d1);
+    const d2 = makeDie(); d2.position.set( 1.65, 0, 0); scene.add(d2); dice.push(d2);
   } else {
-    const geo = geoMap.capanga;
-    const d1 = geo ? makeDieSTL(geo) : makeDieBox();
-    d1.position.set(0, 0, 0);
-    scene.add(d1); dice.push(d1);
+    const d1 = makeDie(); d1.position.set(0, 0, 0); scene.add(d1); dice.push(d1);
   }
 }
 
-// ── Atualiza cores ao trocar esquema ─────────────────────────────────────────
+// ── Atualiza cores ────────────────────────────────────────────────────────────
 function rebuildDiceMaterials() {
-  const { body, num, roughness, metalness } = SCHEMES[colorScheme];
+  const { body, num } = SCHEMES[colorScheme];
   dice.forEach(die => {
-    if (die._isSTL) {
-      die.material.color.set(body);
-      die.material.roughness  = roughness;
-      die.material.metalness  = metalness;
-      die.material.needsUpdate = true;
-    } else {
-      // BoxGeometry fallback — recria texturas
-      BOX_FACE_VALUES.forEach((v, i) => {
-        die.material[i].map?.dispose();
-        die.material[i].map = makeFaceTex(v, body, num);
-        die.material[i].needsUpdate = true;
-      });
-    }
+    FACE_VALUES_12.forEach((v, i) => {
+      die.material[i].map?.dispose();
+      die.material[i].map = makeFaceTex(v, body, num);
+      die.material[i].needsUpdate = true;
+    });
   });
 }
 
@@ -167,7 +183,8 @@ async function initScene() {
 
   const W = canvas.parentElement?.clientWidth || 300;
   const H = 240;
-  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
 
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setSize(W, H);
@@ -176,24 +193,16 @@ async function initScene() {
 
   scene  = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(48, W/H, 0.1, 100);
-  camera.position.set(0, 1.8, 5.4);
+  // Ligeiramente acima para a face de cima ficar visível após o resultado
+  camera.position.set(0, 2.2, 5.2);
   camera.lookAt(0, 0, 0);
 
-  scene.add(new THREE.AmbientLight(0xfff8e7, 0.75));
-  const sun = new THREE.DirectionalLight(0xffffff, 1.5); sun.position.set(5,10,7); scene.add(sun);
-  const fill= new THREE.DirectionalLight(0xc8a050, 0.4); fill.position.set(-5,-3,-6); scene.add(fill);
-  const rim = new THREE.DirectionalLight(0x6099d0, 0.25); rim.position.set(0,-6,3); scene.add(rim);
+  scene.add(new THREE.AmbientLight(0xfff8e7, 0.85));
+  const sun  = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(4, 10, 6); scene.add(sun);
+  const fill = new THREE.DirectionalLight(0xc8a050, 0.4); fill.position.set(-5,-3,-6); scene.add(fill);
+  const rim  = new THREE.DirectionalLight(0x6099d0, 0.2); rim.position.set(0,-6, 3); scene.add(rim);
 
-  const status = document.getElementById('diceStatus');
-  if (status) status.textContent = 'Carregando modelos...';
-
-  [geoMap.batalha, geoMap.capanga] = await Promise.all([
-    loadSTLGeo('assets/dice/batalha.stl'),
-    loadSTLGeo('assets/dice/capanga.stl'),
-  ]);
-
-  if (status) status.textContent = '';
-
+  buildDodecaGeo();
   setupDice();
   ready = true;
   requestAnimationFrame(loop);
@@ -209,6 +218,7 @@ function loop(ts) {
     rollT = Math.min(rollT + dt / 2.4, 1);
     const t = rollT;
 
+    // animação de posição — apenas no modo batalha
     if (diceMode === 'batalha' && dice.length === 2) {
       let x1, x2;
       if (t < 0.40) {
@@ -231,16 +241,19 @@ function loop(ts) {
       dice[1].position.x = x2;
     }
 
+    // captura quaternion no início da fase de pouso
     if (t >= LAND_T && !landingStarted) {
       landingStarted = true;
       landQuatStarts = dice.map(d => d.quaternion.clone());
     }
 
     if (!landingStarted) {
+      // giro rápido
       const sp = 10;
       if (dice[0]) { dice[0].rotation.x += dt*sp*1.2; dice[0].rotation.y += dt*sp*0.75; }
       if (dice[1]) { dice[1].rotation.x += dt*sp*0.85; dice[1].rotation.y += dt*sp*1.35; dice[1].rotation.z += dt*sp*0.4; }
     } else {
+      // slerp até a face alvo
       const p = easeOut((t - LAND_T) / (1 - LAND_T));
       dice.forEach((d, i) => {
         if (targetQuats[i]) d.quaternion.slerpQuaternions(landQuatStarts[i], targetQuats[i], p);
@@ -258,8 +271,8 @@ function loop(ts) {
     }
 
   } else if (!showingResult) {
-    if (dice[0]) { dice[0].rotation.y += dt*0.35; dice[0].rotation.x += dt*0.09; }
-    if (dice[1]) { dice[1].rotation.y -= dt*0.28; dice[1].rotation.x += dt*0.12; }
+    if (dice[0]) { dice[0].rotation.y += dt*0.32; dice[0].rotation.x += dt*0.09; }
+    if (dice[1]) { dice[1].rotation.y -= dt*0.26; dice[1].rotation.x += dt*0.12; }
   }
 
   renderer?.render(scene, camera);
@@ -318,9 +331,7 @@ window.rolarDados = function() {
   rollResults = Array.from({ length: count }, () =>
     ROOT_FACES[Math.floor(Math.random() * ROOT_FACES.length)]
   );
-  targetQuats = rollResults.map(v =>
-    new THREE.Quaternion().setFromEuler(getFaceUpEuler(v))
-  );
+  targetQuats = rollResults.map(v => getTargetQuat(v));
   rollT = 0; pulsed = false; rolling = true;
   landingStarted = false; landQuatStarts = [];
   showingResult = false;
