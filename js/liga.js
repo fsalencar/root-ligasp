@@ -1,5 +1,22 @@
 // Liga: resultado, switchTab, mapa-only
 
+function _comprimirImagem(file, maxLado = 1200, qualidade = 0.75) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxLado / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(resolve, 'image/jpeg', qualidade);
+    };
+    img.src = url;
+  });
+}
+
 // ===================== LIGA =====================
 
 const LIGA_FACTIONS = [
@@ -647,14 +664,17 @@ async function enviarParaLiga() {
     const matchId = _ligaEditando?.id || crypto.randomUUID();
     const ext1    = (_ligaUploadPontuacao.name.split('.').pop() || 'jpg').toLowerCase();
     const ext2    = (_ligaUploadJogadores.name.split('.').pop() || 'jpg').toLowerCase();
-    const path1   = `${uid}/${matchId}/pontuacao.${ext1}`;
-    const path2   = `${uid}/${matchId}/jogadores.${ext2}`;
+    const path1   = `${uid}/${matchId}/pontuacao.jpg`;
+    const path2   = `${uid}/${matchId}/jogadores.jpg`;
 
-    const { error: e1 } = await sb.storage.from('fotos-partidas').upload(path1, _ligaUploadPontuacao, { upsert: true });
+    const blob1 = await _comprimirImagem(_ligaUploadPontuacao);
+    const blob2 = await _comprimirImagem(_ligaUploadJogadores);
+
+    const { error: e1 } = await sb.storage.from('fotos-partidas').upload(path1, blob1, { upsert: true, contentType: 'image/jpeg' });
     if (e1) throw e1;
     if (status) status.textContent = 'Enviando segunda foto...';
 
-    const { error: e2 } = await sb.storage.from('fotos-partidas').upload(path2, _ligaUploadJogadores, { upsert: true });
+    const { error: e2 } = await sb.storage.from('fotos-partidas').upload(path2, blob2, { upsert: true, contentType: 'image/jpeg' });
     if (e2) throw e2;
 
     const { data: d1 } = sb.storage.from('fotos-partidas').getPublicUrl(path1);
