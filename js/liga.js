@@ -295,7 +295,11 @@ function renderLigaPlayers() {
   // Player cards
   const section = document.createElement('div');
   section.className = 'section';
-  section.innerHTML = '<div class="section-title">Jogadores e Resultados</div>';
+  section.innerHTML = `
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>Jogadores e Resultados</span>
+      <button class="ludo-btn-sm" onclick="abrirSelecionarJogadoresModal()" style="font-size:0.72rem;">👥 Lista de jogadores</button>
+    </div>`;
 
   for (let i = 0; i < ligaNumPlayers; i++) {
     const isFirst = i === 0;
@@ -306,14 +310,16 @@ function renderLigaPlayers() {
     const facOptions = '<option value="">— Selecione a facção —</option>' + LIGA_FACTIONS.map(f =>
       `<option value="${f.id}">${f.name}</option>`
     ).join('');
-    // Will be filtered after all cards are rendered
 
     const vagOptions = VAGABOND_TYPES.map(v =>
       `<option value="${v}">${v}</option>`
     ).join('');
 
     card.innerHTML = `
-      <div class="liga-player-header">Jogador ${i+1}</div>
+      <div class="liga-player-header" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>Jogador ${i+1}</span>
+        <button class="ludo-btn-sm" onclick="_abrirPickerJogadorLiga(${i})" style="font-size:0.7rem;">👤 Selecionar</button>
+      </div>
       <div class="liga-field-row">
         <div class="liga-field"><label>Nome</label>
           <input type="text" id="ligaName_${i}" placeholder="Nome do jogador">
@@ -347,6 +353,48 @@ function renderLigaPlayers() {
   }
   wrap.appendChild(section);
   updateFacSelects();
+}
+
+function _abrirPickerJogadorLiga(slotIdx) {
+  const lista = (typeof _jogadoresCadastrados !== 'undefined') ? _jogadoresCadastrados : [];
+  const modal = document.getElementById('modalJogadores');
+  if (!modal) return;
+
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:400px;width:95%;max-height:85vh;display:flex;flex-direction:column;">
+      <div class="modal-header">
+        <span style="font-size:1rem;font-weight:600;color:var(--gold);">👤 Jogador ${slotIdx + 1}</span>
+        <button onclick="fecharGerenciarJogadores()" class="modal-close-btn">×</button>
+      </div>
+      <input type="text" id="ligaPickerBusca" placeholder="Buscar jogador..."
+        oninput="_filtrarPickerLiga(${slotIdx}, this.value)"
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:0.45rem 0.7rem;color:var(--text);font-size:0.85rem;margin-bottom:0.75rem;font-family:sans-serif;">
+      <div id="ligaPickerLista" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;">
+        ${lista.length ? lista.map(j => `
+          <div class="jogador-sel-item" onclick="_selecionarJogadorLiga(${slotIdx},'${j.nome.replace(/'/g, "\\'")}')" style="cursor:pointer;" data-nome="${j.nome.toLowerCase()}">
+            <div style="flex:1;">
+              <div class="jsel-nome">${j.nome}</div>
+              ${j.ludopedia_usuario ? `<div class="jsel-sub">🎲 ${j.ludopedia_usuario}</div>` : ''}
+            </div>
+          </div>`).join('') : `<div style="text-align:center;padding:1.5rem;font-family:sans-serif;color:var(--text3);font-size:0.82rem;">Nenhum jogador cadastrado.</div>`}
+      </div>
+    </div>`;
+  modal.style.display = 'flex';
+}
+
+function _filtrarPickerLiga(slotIdx, q) {
+  const el = document.getElementById('ligaPickerLista');
+  if (!el) return;
+  const items = el.querySelectorAll('.jogador-sel-item');
+  items.forEach(item => {
+    item.style.display = item.dataset.nome.includes(q.toLowerCase()) ? '' : 'none';
+  });
+}
+
+function _selecionarJogadorLiga(slotIdx, nome) {
+  const inp = document.getElementById('ligaName_' + slotIdx);
+  if (inp) inp.value = nome;
+  fecharGerenciarJogadores();
 }
 
 function updateFacSelects() {
