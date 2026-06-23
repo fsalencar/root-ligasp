@@ -312,7 +312,11 @@ async function initLudopedia() {
     localStorage.removeItem('ludo_connecting');
     renderLudopediaConnecting();
 
-    const jaLogado = typeof currentUser !== 'undefined' && currentUser;
+    // Aguarda a sessão Supabase antes de decidir o caminho
+    const _sb = await initSupabase();
+    const { data: { session: _sess } } = await _sb.auth.getSession();
+    if (_sess?.user && !currentUser) currentUser = _sess.user;
+    const jaLogado = !!currentUser;
 
     if (jaLogado) {
       // Já tem sessão Google → só adiciona o token Ludopedia à conta existente
