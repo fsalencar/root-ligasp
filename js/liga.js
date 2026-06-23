@@ -21,7 +21,7 @@ const VAGABOND_TYPES = [
   'Patife','Ronin','Saqueador','Vagabundo',
 ];
 
-const VALID_TABS = ['sorteio', 'partida', 'mapa', 'liga', 'historico', 'aprovacoes'];
+const VALID_TABS = ['sorteio', 'partida', 'mapa', 'liga', 'historico', 'aprovacoes', 'admin'];
 
 // Ativa a aba sem tocar no histórico do browser (restauração e popstate)
 function _activateTab(tab, btn) {
@@ -38,6 +38,7 @@ function _activateTab(tab, btn) {
   if (tab === 'partida' && typeof renderPartida === 'function') renderPartida();
   if (tab === 'historico' && typeof carregarHistorico === 'function') carregarHistorico();
   if (tab === 'aprovacoes' && typeof carregarAprovacoes === 'function') carregarAprovacoes();
+  if (tab === 'admin'      && typeof carregarAdmin      === 'function') carregarAdmin();
 }
 
 // Chamado pelos botões no HTML — atualiza a URL e ativa a aba
