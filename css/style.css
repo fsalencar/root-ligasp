@@ -1312,3 +1312,66 @@
     background: var(--gold); color: #1a1209;
     border-color: var(--gold); font-weight: bold;
   }
+
+  /* ===== BADGES DE STATUS DA LIGA ===== */
+  .liga-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-family: sans-serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin: 4px 0;
+  }
+  .badge-pendente  { background: rgba(200,160,80,0.15); color: var(--gold);   border: 1px solid rgba(200,160,80,0.3); }
+  .badge-revisao   { background: var(--blue-bg);        color: #70a8f0;       border: 1px solid rgba(48,112,200,0.3); }
+  .badge-aprovada  { background: var(--green-bg);       color: #80d060;       border: 1px solid rgba(74,143,48,0.3); }
+  .badge-reprovada { background: var(--red-bg);         color: #f08070;       border: 1px solid rgba(200,64,40,0.3); }
+
+  /* ===== UPLOAD DE FOTOS ===== */
+  .upload-area-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .upload-area {
+    background: var(--surface2);
+    border: 2px dashed var(--border2);
+    border-radius: var(--radius);
+    cursor: pointer;
+    min-height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .upload-area:hover { border-color: var(--gold); }
+  .upload-area.has-image { border-style: solid; border-color: var(--green); }
+  .upload-preview {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 6px;
+    padding: 1rem; width: 100%; height: 100%;
+  }
+  .upload-icon  { font-size: 2rem; }
+  .upload-label { font-family: sans-serif; font-size: 0.78rem; color: var(--text2); text-align: center; }
+  .upload-hint  { font-family: sans-serif; font-size: 0.68rem; color: var(--text3); }
+
+  /* ===== BANNER DE REVISÃO ===== */
+  .banner-revisao {
+    background: var(--blue-bg);
+    border: 1px solid rgba(48,112,200,0.3);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 1rem;
+    font-family: sans-serif;
+    font-size: 0.82rem;
+    color: var(--text2);
+    line-height: 1.5;
+  }
+  .banner-revisao strong { color: #70a8f0; }
+
+  /* ===== AÇÕES DE APROVAÇÃO ===== */
+  .aprov-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+  @media (max-width: 480px) {
+    .upload-area-wrap { grid-template-columns: 1fr; }
+    .aprov-actions { flex-direction: column; }
+  }

@@ -79,6 +79,7 @@
     <button class="liga-tab" data-tab="mapa" onclick="switchTab('mapa',this)" style="flex:1;min-width:100px;">🗺️ Sortear Mapa & Clareiras</button>
     <button class="liga-tab" data-tab="liga" onclick="switchTab('liga',this)" style="flex:1;min-width:100px;">🏆 Registrar Resultado na Liga Root - SP</button>
     <button class="liga-tab" data-tab="historico" onclick="switchTab('historico',this)" style="flex:1;min-width:100px;">📋 Histórico de Partidas</button>
+    <button class="liga-tab" data-tab="aprovacoes" id="tabAprovacoes" onclick="switchTab('aprovacoes',this)" style="flex:1;min-width:100px;display:none;">🛡 Aprovações</button>
   </div>
 
   <!-- ===== ABA SORTEIO ===== -->
@@ -231,6 +232,8 @@
   <!-- ===== ABA LIGA ===== -->
   <div class="liga-section" id="tab-liga">
 
+    <div id="ligaEditBanner"></div>
+
     <div class="section">
       <div class="section-title">Informações da Partida</div>
       <div class="liga-field-row">
@@ -265,6 +268,7 @@
       </div>
       <div class="liga-result-text" id="ligaResultText"></div>
     </div>
+    <div id="ligaUploadBox" style="display:none;"></div>
     <div id="ludoBtnContainerLiga"></div>
 
   </div><!-- /tab-liga -->
@@ -278,6 +282,11 @@
   <div class="liga-section" id="tab-historico">
     <!-- Conteúdo renderizado por historico.js -->
   </div><!-- /tab-historico -->
+
+  <!-- ===== ABA APROVAÇÕES (embaixadores) ===== -->
+  <div class="liga-section" id="tab-aprovacoes">
+    <!-- Conteúdo renderizado por aprovacao.js -->
+  </div><!-- /tab-aprovacoes -->
 
 
 <!-- ===== MODAL DE LOGIN / CADASTRO ===== -->
@@ -343,6 +352,7 @@
 <script src="js/sorteio.js?v=2"></script>
 <script src="js/partida.js?v=2"></script>
 <script src="js/historico.js?v=2"></script>
+<script src="js/aprovacao.js?v=1"></script>
 <script src="js/liga.js?v=2"></script>
 <script type="module" src="js/dice.js?v=3"></script>
 <script src="js/pwa.js?v=2"></script>

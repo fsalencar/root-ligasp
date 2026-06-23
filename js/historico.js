@@ -33,8 +33,9 @@ async function carregarHistorico() {
     }
 
     renderHistoricoData(section, data || []);
-    // Carrega partidas da Ludopedia em paralelo (sem bloquear o histórico do app)
+    // Carrega em paralelo sem bloquear o histórico principal
     carregarHistoricoLudopedia(section);
+    carregarPartidasLiga(section);
   } catch (e) {
     renderHistoricoMensagem(section, '⚠️', 'Erro de conexão ao carregar histórico.');
     console.warn('Historico error:', e);
@@ -213,6 +214,98 @@ function compartilharHistoricoWhatsApp(id) {
 }
 
 let _historicoData = [];
+let _ligaPartidasData = [];
+
+// ── Partidas submetidas para a liga ──────────────────────────────
+
+async function carregarPartidasLiga(section) {
+  const user = typeof currentUser !== 'undefined' ? currentUser : null;
+  if (!user) return;
+
+  const placeholder = document.createElement('div');
+  placeholder.id = 'ligaPartidasSection';
+  section.appendChild(placeholder);
+
+  try {
+    const sb = await initSupabase();
+    const { data, error } = await sb
+      .from('partidas_liga')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('criado_em', { ascending: false })
+      .limit(20);
+
+    const el = document.getElementById('ligaPartidasSection');
+    if (!el) return;
+
+    if (error || !data?.length) { el.remove(); return; }
+
+    _ligaPartidasData = data;
+    el.innerHTML = `
+      <div class="section" style="margin-top:1rem;">
+        <div class="section-title">Minhas Partidas na Liga (${data.length})</div>
+        ${data.map(p => _renderCardLigaPartida(p)).join('')}
+      </div>`;
+  } catch {
+    const el = document.getElementById('ligaPartidasSection');
+    if (el) el.remove();
+  }
+}
+
+const _LIGA_STATUS_BADGE = {
+  pendente_aprovacao: '<span class="liga-badge badge-pendente">⏳ Aguardando aprovação</span>',
+  pendente_revisao:   '<span class="liga-badge badge-revisao">🔄 Pendente revisão</span>',
+  aprovada:           '<span class="liga-badge badge-aprovada">✓ Aprovada</span>',
+  reprovada:          '<span class="liga-badge badge-reprovada">✗ Reprovada</span>',
+};
+
+function _renderCardLigaPartida(p) {
+  const d = p.dados || {};
+  const jogadores = d.jogadores || [];
+  const vencedor  = jogadores.find(j => j.vencedor);
+
+  let dataStr = '';
+  if (d.data) {
+    const parts = d.data.split('-');
+    if (parts.length === 3) dataStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+
+  const badge      = _LIGA_STATUS_BADGE[p.status] || '';
+  const podeEditar = p.status === 'pendente_revisao';
+
+  return `
+    <div class="hist-card">
+      <div class="hist-card-header">
+        <span class="hist-local">${d.local || '—'}</span>
+        <span class="hist-data">${dataStr}</span>
+      </div>
+      ${badge}
+      ${d.mapa ? `<div class="hist-mapa">🗺️ ${d.mapa}</div>` : ''}
+      ${vencedor ? `<div class="hist-vencedor">🏆 ${vencedor.nome} — ${vencedor.faccao}</div>` : ''}
+      <div class="hist-jogadores">
+        ${jogadores.map(j => `
+          <span class="hist-jogador${j.vencedor ? ' hist-vencedor-tag' : ''}">
+            ${j.nome}${j.faccao ? ' · ' + j.faccao : ''}${j.pontuacao != null ? ' · ' + j.pontuacao + 'pts' : ''}
+          </span>`).join('')}
+      </div>
+      ${p.nota_embaixador ? `
+        <div style="margin-top:8px;padding:8px 10px;background:var(--surface2);border-radius:8px;font-family:sans-serif;font-size:0.78rem;color:var(--text2);line-height:1.4;">
+          <strong style="color:var(--text3);">Nota do embaixador:</strong> ${p.nota_embaixador}
+        </div>` : ''}
+      ${podeEditar ? `
+        <div style="margin-top:10px;">
+          <button class="btn-liga" style="font-size:0.82rem;padding:0.5rem 1rem;" onclick="_editarPorId('${p.id}')">✏ Editar e Reenviar</button>
+        </div>` : ''}
+    </div>`;
+}
+
+function _editarPorId(id) {
+  const p = _ligaPartidasData.find(x => x.id === id);
+  if (!p) return;
+  if (typeof editarPartidaRevisao === 'function') {
+    editarPartidaRevisao(p.id, p.dados, p.nota_embaixador);
+  }
+}
 
 function renderHistoricoCard(entry) {
   const d = entry.dados || {};

@@ -23,6 +23,7 @@ async function initSupabase() {
     renderAuthUI();
     if (event === 'SIGNED_IN') {
       hideAuthModal();
+      carregarPerfil(session.user.id);
       // Salva dados de contato pendentes (do cadastro via Ludopedia/Google)
       const pendingWA = localStorage.getItem('pending_whatsapp');
       if (pendingWA && currentUser) {
@@ -47,6 +48,8 @@ async function initSupabase() {
       }
     }
     if (event === 'SIGNED_OUT') {
+      currentUserRole = 'jogador';
+      _renderTabEmbaixador();
       // Limpa sessão Ludopedia da memória
       if (typeof ludoToken !== 'undefined') { ludoToken = null; }
       if (typeof ludoUser  !== 'undefined') { ludoUser  = null; }
@@ -71,6 +74,22 @@ async function initSupabase() {
 }
 
 let currentUser = null;
+let currentUserRole = 'jogador';
+
+async function carregarPerfil(userId) {
+  try {
+    const sb = await initSupabase();
+    const { data } = await sb.from('perfis').select('role').eq('user_id', userId).single();
+    currentUserRole = data?.role || 'jogador';
+  } catch { currentUserRole = 'jogador'; }
+  _renderTabEmbaixador();
+}
+
+function _renderTabEmbaixador() {
+  const tab = document.getElementById('tabAprovacoes');
+  if (!tab) return;
+  tab.style.display = (currentUserRole === 'embaixador' || currentUserRole === 'admin') ? '' : 'none';
+}
 
 // ── Login ────────────────────────────────────────────────────────
 async function loginGoogle() {
@@ -246,6 +265,29 @@ async function abrirModalPerfil() {
         </div>
       </div>
 
+      ${currentUserRole === 'admin' ? `
+      <!-- Painel Admin -->
+      <div class="perfil-section">
+        <div class="perfil-section-label">ADMINISTRAÇÃO</div>
+        <p style="font-family:sans-serif;font-size:0.73rem;color:var(--text3);margin:0 0 8px;line-height:1.4;">
+          Cole o ID do usuário (botão "Copiar ID" no perfil dele) e selecione o papel.
+        </p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <input id="adminUserId" type="text" placeholder="ID do usuário (UUID)"
+            style="flex:1;min-width:0;font-size:0.75rem;font-family:monospace;">
+          <select id="adminRole" style="flex-shrink:0;font-size:0.82rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:0.4rem 0.6rem;color:var(--text);">
+            <option value="embaixador">Embaixador</option>
+            <option value="jogador">Jogador</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:6px;">
+          <button class="ludo-btn-sm" onclick="_salvarRoleAdmin()">Salvar</button>
+        </div>
+        <div id="adminStatus" style="font-family:sans-serif;font-size:0.72rem;min-height:14px;margin-top:4px;"></div>
+        <div id="adminListaEmbaixadores" style="margin-top:10px;"></div>
+      </div>` : ''}
+
       <button onclick="logout();fecharGerenciarJogadores();" class="perfil-logout-btn">Sair da conta</button>
     </div>`;
 
@@ -253,6 +295,8 @@ async function abrirModalPerfil() {
   if (typeof _gerarQRCode === 'function') {
     await _gerarQRCode('perfilQRBox', `https://root-ligasp.vercel.app/?pid=${userId}`, 118);
   }
+
+  if (currentUserRole === 'admin') _carregarListaRoles();
 }
 
 async function _salvarNomeExibicao() {
@@ -362,4 +406,61 @@ async function _salvarWhatsApp() {
   } catch (e) {
     el.style.color = '#f09080'; el.textContent = 'Erro: ' + e.message;
   }
+}
+
+// ── Painel Admin ──────────────────────────────────────────────────
+
+async function _salvarRoleAdmin() {
+  const uid  = document.getElementById('adminUserId')?.value?.trim();
+  const role = document.getElementById('adminRole')?.value;
+  const el   = document.getElementById('adminStatus');
+  if (!uid) { if (el) { el.style.color = '#f09080'; el.textContent = 'Cole o ID do usuário.'; } return; }
+  if (el) { el.style.color = 'var(--text3)'; el.textContent = 'Salvando...'; }
+  try {
+    const sb = await initSupabase();
+    const { error } = await sb.from('perfis')
+      .upsert({ user_id: uid, role }, { onConflict: 'user_id' });
+    if (error) throw error;
+    if (el) { el.style.color = '#80d060'; el.textContent = `✓ ${uid.slice(0,8)}... definido como ${role}.`; }
+    const inp = document.getElementById('adminUserId');
+    if (inp) inp.value = '';
+    _carregarListaRoles();
+  } catch (e) {
+    if (el) { el.style.color = '#f09080'; el.textContent = 'Erro: ' + e.message; }
+  }
+}
+
+async function _carregarListaRoles() {
+  const el = document.getElementById('adminListaEmbaixadores');
+  if (!el) return;
+  try {
+    const sb = await initSupabase();
+    const { data } = await sb.from('perfis').select('*').neq('role', 'jogador').order('role');
+    if (!data?.length) {
+      el.innerHTML = '<div style="font-family:sans-serif;font-size:0.72rem;color:var(--text3);">Nenhum embaixador cadastrado.</div>';
+      return;
+    }
+    el.innerHTML = `
+      <div style="font-family:sans-serif;font-size:0.7rem;color:var(--text3);margin-bottom:4px;letter-spacing:0.05em;text-transform:uppercase;">Embaixadores & Admins</div>
+      ${data.map(p => `
+        <div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border);">
+          <span class="liga-badge ${p.role === 'admin' ? 'badge-aprovada' : 'badge-pendente'}" style="flex-shrink:0;">${p.role}</span>
+          <span style="font-size:0.67rem;color:var(--text3);font-family:monospace;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.user_id}</span>
+          ${p.user_id !== currentUser?.id ? `
+            <button onclick="_removerRoleAdmin('${p.user_id}')"
+              style="background:transparent;border:1px solid rgba(200,64,40,0.4);border-radius:4px;color:#f08070;font-size:0.67rem;padding:2px 6px;cursor:pointer;flex-shrink:0;">
+              Remover
+            </button>` : '<span style="font-size:0.67rem;color:var(--text3);flex-shrink:0;">(você)</span>'}
+        </div>`).join('')}`;
+  } catch { el.innerHTML = ''; }
+}
+
+async function _removerRoleAdmin(uid) {
+  try {
+    const sb = await initSupabase();
+    const { error } = await sb.from('perfis')
+      .upsert({ user_id: uid, role: 'jogador' }, { onConflict: 'user_id' });
+    if (error) throw error;
+    _carregarListaRoles();
+  } catch (e) { alert('Erro: ' + e.message); }
 }

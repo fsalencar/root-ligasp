@@ -21,7 +21,7 @@ const VAGABOND_TYPES = [
   'Patife','Ronin','Saqueador','Vagabundo',
 ];
 
-const VALID_TABS = ['sorteio', 'partida', 'mapa', 'liga', 'historico'];
+const VALID_TABS = ['sorteio', 'partida', 'mapa', 'liga', 'historico', 'aprovacoes'];
 
 // Ativa a aba sem tocar no histórico do browser (restauração e popstate)
 function _activateTab(tab, btn) {
@@ -37,6 +37,7 @@ function _activateTab(tab, btn) {
   if (tab === 'mapa') initMapaOnly();
   if (tab === 'partida' && typeof renderPartida === 'function') renderPartida();
   if (tab === 'historico' && typeof carregarHistorico === 'function') carregarHistorico();
+  if (tab === 'aprovacoes' && typeof carregarAprovacoes === 'function') carregarAprovacoes();
 }
 
 // Chamado pelos botões no HTML — atualiza a URL e ativa a aba
@@ -160,15 +161,98 @@ function compartilharWhatsApp() {
 
 let ligaNumPlayers = 4;
 
+// Estado do envio para a liga
+let _ligaDadosAtual      = null;
+let _ligaUploadPontuacao = null;
+let _ligaUploadJogadores = null;
+let _ligaEditando        = null; // { id, dados, nota_embaixador } ao editar revisão
+
 function initLiga() {
-  // Set today's date
+  if (_ligaEditando) ligaNumPlayers = _ligaEditando.dados?.jogadores?.length || ligaNumPlayers;
+
   const today = new Date();
   const yyyy = today.getFullYear();
   const mm = String(today.getMonth()+1).padStart(2,'0');
   const dd = String(today.getDate()).padStart(2,'0');
+  const todayStr = yyyy+'-'+mm+'-'+dd;
   const el = document.getElementById('ligaData');
-  if (el && !el.value) el.value = yyyy+'-'+mm+'-'+dd;
+  if (el && !el.value && !_ligaEditando) el.value = todayStr;
+
   renderLigaPlayers();
+
+  if (_ligaEditando) {
+    _preencherFormularioEdicao(_ligaEditando.dados, todayStr);
+    _mostrarBannerEdicao(_ligaEditando.nota_embaixador);
+  } else {
+    const banner = document.getElementById('ligaEditBanner');
+    if (banner) banner.innerHTML = '';
+  }
+
+  // Limpa a caixa de upload ao entrar na aba
+  const uploadBox = document.getElementById('ligaUploadBox');
+  if (uploadBox) { uploadBox.style.display = 'none'; uploadBox.innerHTML = ''; }
+  _ligaDadosAtual = null;
+}
+
+function _mostrarBannerEdicao(nota) {
+  const banner = document.getElementById('ligaEditBanner');
+  if (!banner) return;
+  banner.innerHTML = `
+    <div class="banner-revisao" style="margin-bottom:1rem;">
+      <strong>Modo de revisão</strong> — Edite os dados abaixo e reenvie para aprovação.
+      ${nota ? `<br><strong>Nota do embaixador:</strong> ${nota}` : ''}
+      <br><button onclick="cancelarEdicaoLiga()" style="margin-top:8px;background:transparent;border:1px solid rgba(48,112,200,0.4);border-radius:6px;color:#70a8f0;font-size:0.75rem;padding:3px 10px;cursor:pointer;font-family:sans-serif;">✕ Cancelar edição</button>
+    </div>`;
+}
+
+function cancelarEdicaoLiga() {
+  _ligaEditando = null;
+  initLiga();
+}
+
+function _preencherFormularioEdicao(dados, todayStr) {
+  const { local, data, mapa, jogadores } = dados || {};
+  const localEl = document.getElementById('ligaLocal');
+  const dataEl  = document.getElementById('ligaData');
+  const mapaEl  = document.getElementById('ligaMapa');
+
+  if (localEl && local) localEl.value = local;
+  if (dataEl) dataEl.value = data || todayStr || '';
+  if (mapaEl && mapa) mapaEl.value = mapa;
+
+  if (!jogadores?.length) return;
+  ligaNumPlayers = jogadores.length;
+  renderLigaPlayers();
+
+  jogadores.forEach((j, i) => {
+    const nameEl  = document.getElementById('ligaName_' + i);
+    const facEl   = document.getElementById('ligaFac_' + i);
+    const vagEl   = document.getElementById('ligaVagType_' + i);
+    const scoreEl = document.getElementById('ligaScore_' + i);
+    const inEl    = document.getElementById('ligaIniciante_' + i);
+    const vitEl   = document.getElementById('ligaVitDom_' + i);
+    const derEl   = document.getElementById('ligaDerDom_' + i);
+
+    if (nameEl && j.nome)  nameEl.value = j.nome;
+    if (facEl  && j.facId) { facEl.value = j.facId; onFacChange(i); }
+    if (vagEl  && j.vagType) vagEl.value = j.vagType;
+    if (scoreEl && j.pontuacao != null) scoreEl.value = j.pontuacao;
+    if (inEl) inEl.checked = !!j.iniciante;
+    // vitória por domínio: vencedor sem pontuação
+    if (vitEl && j.vencedor && j.pontuacao == null) vitEl.checked = true;
+    // derrota por domínio: não vencedor sem pontuação
+    if (derEl && !j.vencedor && j.pontuacao == null) derEl.checked = true;
+  });
+
+  updateFacSelects();
+  updateVagSelects();
+}
+
+// Chamado pelo historico.js para editar uma partida em revisão
+function editarPartidaRevisao(id, dados, nota) {
+  _ligaEditando = { id, dados, nota_embaixador: nota };
+  const btn = document.querySelector('.liga-tab[data-tab="liga"]');
+  if (btn) switchTab('liga', btn);
 }
 
 function renderLigaPlayers() {
@@ -335,8 +419,10 @@ function gerarResultadoLiga() {
     const facId = document.getElementById('ligaFac_' + i).value;
     const scoreEl = document.getElementById('ligaScore_' + i);
     const scoreVal = scoreEl ? scoreEl.value.trim() : '';
-    const vitDom = document.getElementById('ligaVitDom_' + i)?.checked;
-    const derDom = document.getElementById('ligaDerDom_' + i)?.checked;
+    const vitDom  = document.getElementById('ligaVitDom_' + i)?.checked;
+    const derDom  = document.getElementById('ligaDerDom_' + i)?.checked;
+    const vagType = (facId === 'vagabond' || facId === 'vagabond2')
+      ? (document.getElementById('ligaVagType_' + i)?.value || null) : null;
 
     if (!name) erros.push(`• Jogador ${i+1}: nome não preenchido`);
     if (!facId) erros.push(`• Jogador ${i+1}: facção não selecionada`);
@@ -373,16 +459,15 @@ function gerarResultadoLiga() {
     const scoreEl = document.getElementById('ligaScore_' + i);
     const score = scoreEl ? parseInt(scoreEl.value) || 0 : 0;
     const iniciante = document.getElementById('ligaIniciante_' + i)?.checked || false;
-    const vitDom = document.getElementById('ligaVitDom_' + i)?.checked;
-    const derDom = document.getElementById('ligaDerDom_' + i)?.checked;
+    const vitDom    = document.getElementById('ligaVitDom_' + i)?.checked;
+    const derDom    = document.getElementById('ligaDerDom_' + i)?.checked;
+    const vagType   = (facId === 'vagabond' || facId === 'vagabond2')
+      ? (document.getElementById('ligaVagType_' + i)?.value || null) : null;
 
     let facName = LIGA_FACTIONS.find(f => f.id === facId)?.name || facId;
-    if (facId === 'vagabond' || facId === 'vagabond2') {
-      const vtype = document.getElementById('ligaVagType_' + i)?.value;
-      if (vtype) facName = 'Malandro (' + vtype + ')';
-    }
+    if (vagType) facName = 'Malandro (' + vagType + ')';
 
-    players.push({ name, facName, score, iniciante, vitDom, derDom, derDomFlag: derDom, slotIdx: i });
+    players.push({ name, facName, facId, vagType, score, iniciante, vitDom, derDom, derDomFlag: derDom, slotIdx: i });
   }
 
   // Sort: derrota por domínio goes last; otherwise by score desc, vitória por domínio first in ties
@@ -419,7 +504,7 @@ function gerarResultadoLiga() {
   const jogadoresFinais = sorted.map((p, i) => {
     const ludo = (typeof getLudoDataParaSlot === 'function') ? getLudoDataParaSlot(p.slotIdx ?? i) : null;
     return {
-      nome: p.name, faccao: p.facName,
+      nome: p.name, faccao: p.facName, facId: p.facId, vagType: p.vagType || null,
       pontuacao: p.vitDom ? null : (p.derDomFlag ? null : p.score),
       vencedor: i === 0 && !p.derDomFlag,
       iniciante: p.iniciante,
@@ -435,6 +520,11 @@ function gerarResultadoLiga() {
   if (typeof autoRegistrarLudo === 'function') {
     autoRegistrarLudo({ local, data: dataVal, mapa, jogadores: jogadoresFinais }, 'ludoBtnContainerLiga');
   }
+
+  // Guarda dados e exibe seção de upload para a liga
+  _ligaDadosAtual = { local, data: dataVal, mapa, jogadores: jogadoresFinais };
+  const uploadBox = document.getElementById('ligaUploadBox');
+  if (uploadBox) { uploadBox.style.display = ''; renderUploadLiga(); }
 }
 
 function copiarResultado() {
@@ -460,6 +550,151 @@ function copiarResultado() {
     btn.className = 'btn-copiar copied';
     setTimeout(() => { btn.textContent = '📋 Copiar'; btn.className = 'btn-copiar'; }, 2000);
   });
+}
+
+// ── Upload e envio para a liga ────────────────────────────────────
+
+function renderUploadLiga() {
+  const box = document.getElementById('ligaUploadBox');
+  if (!box) return;
+  _ligaUploadPontuacao = null;
+  _ligaUploadJogadores = null;
+
+  if (!currentUser) {
+    box.innerHTML = `
+      <div class="section">
+        <div class="section-title">Registrar na Liga</div>
+        <p style="font-family:sans-serif;font-size:0.85rem;color:var(--text3);">
+          <a onclick="showAuthModal()" style="color:var(--gold);cursor:pointer;">Faça login</a> para registrar a partida na liga.
+        </p>
+      </div>`;
+    return;
+  }
+
+  const titulo = _ligaEditando ? 'Reenviar para Aprovação' : 'Registrar na Liga';
+  const btnLabel = _ligaEditando ? '🔄 Reenviar para Aprovação' : '📤 Enviar para Aprovação';
+
+  box.innerHTML = `
+    <div class="section">
+      <div class="section-title">${titulo}</div>
+      <p style="font-family:sans-serif;font-size:0.78rem;color:var(--text3);margin-bottom:1rem;line-height:1.5;">
+        Envie as fotos obrigatórias para que o embaixador possa aprovar a partida.
+      </p>
+      <div class="upload-area-wrap">
+        <div class="upload-area" id="uploadAreaPontuacao" onclick="document.getElementById('inpFotoPontuacao').click()">
+          <div id="previewPontuacao" class="upload-preview">
+            <div class="upload-icon">📸</div>
+            <div class="upload-label">Foto da Pontuação</div>
+            <div class="upload-hint">Toque para selecionar</div>
+          </div>
+          <input type="file" id="inpFotoPontuacao" accept="image/*" style="display:none" onchange="onFotoLigaSelect('pontuacao',this)">
+        </div>
+        <div class="upload-area" id="uploadAreaJogadores" onclick="document.getElementById('inpFotoJogadores').click()">
+          <div id="previewJogadores" class="upload-preview">
+            <div class="upload-icon">👥</div>
+            <div class="upload-label">Foto dos Jogadores</div>
+            <div class="upload-hint">Toque para selecionar</div>
+          </div>
+          <input type="file" id="inpFotoJogadores" accept="image/*" style="display:none" onchange="onFotoLigaSelect('jogadores',this)">
+        </div>
+      </div>
+      <button id="btnEnviarLiga" class="btn-liga" onclick="enviarParaLiga()" disabled style="margin-top:1rem;opacity:0.5;">${btnLabel}</button>
+      <div id="ligaUploadStatus" style="font-family:sans-serif;font-size:0.82rem;min-height:20px;margin-top:8px;text-align:center;color:var(--text3);"></div>
+    </div>`;
+}
+
+function onFotoLigaSelect(tipo, input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (tipo === 'pontuacao') _ligaUploadPontuacao = file;
+  else _ligaUploadJogadores = file;
+
+  const previewId = tipo === 'pontuacao' ? 'previewPontuacao' : 'previewJogadores';
+  const areaId    = tipo === 'pontuacao' ? 'uploadAreaPontuacao' : 'uploadAreaJogadores';
+  const preview   = document.getElementById(previewId);
+  const area      = document.getElementById(areaId);
+
+  if (preview) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;pointer-events:none;">`;
+    };
+    reader.readAsDataURL(file);
+  }
+  if (area) area.classList.add('has-image');
+
+  const btn = document.getElementById('btnEnviarLiga');
+  if (btn) {
+    const ok = _ligaUploadPontuacao && _ligaUploadJogadores;
+    btn.disabled = !ok;
+    btn.style.opacity = ok ? '1' : '0.5';
+  }
+}
+
+async function enviarParaLiga() {
+  if (!_ligaUploadPontuacao || !_ligaUploadJogadores || !_ligaDadosAtual) return;
+  if (!currentUser) { showAuthModal(); return; }
+
+  const btn    = document.getElementById('btnEnviarLiga');
+  const status = document.getElementById('ligaUploadStatus');
+  if (btn) btn.disabled = true;
+  if (status) { status.style.color = 'var(--gold)'; status.textContent = 'Enviando fotos...'; }
+
+  try {
+    const sb      = await initSupabase();
+    const uid     = currentUser.id;
+    const matchId = _ligaEditando?.id || crypto.randomUUID();
+    const ext1    = (_ligaUploadPontuacao.name.split('.').pop() || 'jpg').toLowerCase();
+    const ext2    = (_ligaUploadJogadores.name.split('.').pop() || 'jpg').toLowerCase();
+    const path1   = `${uid}/${matchId}/pontuacao.${ext1}`;
+    const path2   = `${uid}/${matchId}/jogadores.${ext2}`;
+
+    const { error: e1 } = await sb.storage.from('fotos-partidas').upload(path1, _ligaUploadPontuacao, { upsert: true });
+    if (e1) throw e1;
+    if (status) status.textContent = 'Enviando segunda foto...';
+
+    const { error: e2 } = await sb.storage.from('fotos-partidas').upload(path2, _ligaUploadJogadores, { upsert: true });
+    if (e2) throw e2;
+
+    const { data: d1 } = sb.storage.from('fotos-partidas').getPublicUrl(path1);
+    const { data: d2 } = sb.storage.from('fotos-partidas').getPublicUrl(path2);
+
+    if (status) status.textContent = 'Registrando partida...';
+
+    const nomeUser = currentUser.user_metadata?.display_name
+      || currentUser.user_metadata?.full_name
+      || currentUser.email?.split('@')[0] || 'Usuário';
+    const dadosFinais = { ..._ligaDadosAtual, submitter_name: nomeUser };
+
+    if (_ligaEditando) {
+      const { error: e3 } = await sb.from('partidas_liga').update({
+        status: 'pendente_aprovacao',
+        dados: dadosFinais,
+        foto_pontuacao_url: d1.publicUrl,
+        foto_jogadores_url: d2.publicUrl,
+        nota_embaixador: null,
+        atualizado_em: new Date().toISOString(),
+      }).eq('id', matchId);
+      if (e3) throw e3;
+    } else {
+      const { error: e3 } = await sb.from('partidas_liga').insert({
+        id: matchId,
+        user_id: uid,
+        status: 'pendente_aprovacao',
+        dados: dadosFinais,
+        foto_pontuacao_url: d1.publicUrl,
+        foto_jogadores_url: d2.publicUrl,
+      });
+      if (e3) throw e3;
+    }
+
+    _ligaEditando = null;
+    if (status) { status.style.color = '#80d060'; status.textContent = '✓ Partida enviada! Aguardando aprovação do embaixador.'; }
+    if (btn) { btn.textContent = '✓ Enviado'; btn.disabled = true; btn.style.opacity = '1'; }
+  } catch (e) {
+    if (status) { status.style.color = '#f09080'; status.textContent = 'Erro: ' + (e.message || 'falha ao enviar'); }
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+  }
 }
 
 // Inicialização — executada após todos os scripts carregarem
