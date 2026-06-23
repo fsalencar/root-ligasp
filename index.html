@@ -42,15 +42,23 @@
 <!-- Drawer de dados -->
 <div id="diceDrawer" class="dice-drawer">
   <div class="dice-drawer-header">
-    <span style="font-family:Georgia,serif;color:var(--gold);font-size:1rem;">⚔ Dados de Batalha</span>
+    <span id="diceDrawerTitle" style="font-family:Georgia,serif;color:var(--gold);font-size:1rem;">⚔ Dados de Batalha</span>
     <button class="modal-close-btn" onclick="fecharDiceDrawer()">×</button>
   </div>
   <div style="padding:0 1rem 1rem;">
+    <div style="display:flex;gap:6px;justify-content:center;margin-bottom:8px;">
+      <button id="modeBatalha" class="dice-opt-btn active" onclick="setDiceMode('batalha')">⚔ Batalha</button>
+      <button id="modeCapanga" class="dice-opt-btn" onclick="setDiceMode('capanga')">🗡 Capanga</button>
+    </div>
+    <div style="display:flex;gap:6px;justify-content:center;margin-bottom:8px;">
+      <button id="colorWhite" class="dice-opt-btn active" onclick="setColorScheme('white')">◻ Branco / Preto</button>
+      <button id="colorBlack" class="dice-opt-btn" onclick="setColorScheme('black')">◼ Preto / Dourado</button>
+    </div>
     <canvas id="diceCanvas" style="width:100%;display:block;border-radius:var(--radius-lg);background:var(--surface2);"></canvas>
     <div id="diceStatus" style="font-family:sans-serif;font-size:0.65rem;color:var(--text3);text-align:center;margin-top:4px;min-height:14px;line-height:1.3;"></div>
     <div id="diceResultBox" style="display:none;justify-content:center;gap:32px;padding:0.75rem 0 0.25rem;"></div>
-    <button class="btn-rolar-dados" onclick="rolarDados()">⚔ Rolar</button>
-    <p style="font-family:sans-serif;font-size:0.72rem;color:var(--text3);text-align:center;margin:0.5rem 0 0;line-height:1.5;">
+    <button id="btnRolarDados" class="btn-rolar-dados" onclick="rolarDados()">⚔ Rolar</button>
+    <p id="diceDesc" style="font-family:sans-serif;font-size:0.72rem;color:var(--text3);text-align:center;margin:0.5rem 0 0;line-height:1.5;">
       <strong style="color:var(--text2)">Dado de Root:</strong> 0 · 0 · 1 · 1 · 2 · 3<br>
       Atacante = maior valor · Defensor = menor valor
     </p>
