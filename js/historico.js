@@ -17,25 +17,30 @@ async function carregarHistorico() {
 
   try {
     const sb = await initSupabase();
-    const { data, error } = await sb
-      .from('historico')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('criado_em', { ascending: false })
-      .limit(50);
+    const [histRes, ligaRes] = await Promise.all([
+      sb.from('historico').select('*').eq('user_id', user.id).order('criado_em', { ascending: false }).limit(50),
+      sb.from('partidas_liga').select('*').eq('user_id', user.id).order('criado_em', { ascending: false }).limit(50),
+    ]);
 
-    if (error) {
-      const msg = error.code === '42P01'
+    if (histRes.error) {
+      const msg = histRes.error.code === '42P01'
         ? 'A tabela de histórico ainda não foi configurada no banco de dados.'
-        : 'Erro ao carregar histórico: ' + error.message;
+        : 'Erro ao carregar histórico: ' + histRes.error.message;
       renderHistoricoMensagem(section, '📭', msg);
       return;
     }
 
-    renderHistoricoData(section, data || []);
-    // Carrega em paralelo sem bloquear o histórico principal
+    _ligaPartidasData = ligaRes.data || [];
+
+    // Mapa: historico_id → partida_liga (para partidas submetidas via historico)
+    const ligaLookup = {};
+    _ligaPartidasData.forEach(p => {
+      if (p.dados?.historico_id) ligaLookup[p.dados.historico_id] = p;
+    });
+
+    renderHistoricoData(section, histRes.data || [], ligaLookup);
+    _renderLigaPartidasSection(section);
     carregarHistoricoLudopedia(section);
-    carregarPartidasLiga(section);
   } catch (e) {
     renderHistoricoMensagem(section, '⚠️', 'Erro de conexão ao carregar histórico.');
     console.warn('Historico error:', e);
@@ -157,7 +162,7 @@ function renderHistoricoMensagem(section, icon, msg) {
     </div>`;
 }
 
-function renderHistoricoData(section, data) {
+function renderHistoricoData(section, data, ligaLookup = {}) {
   _historicoData = data;
   if (!data.length) {
     section.innerHTML = `
@@ -174,7 +179,7 @@ function renderHistoricoData(section, data) {
   section.innerHTML = `
     <div class="section">
       <div class="section-title">Histórico de Partidas (${data.length})</div>
-      ${data.map(entry => renderHistoricoCard(entry)).join('')}
+      ${data.map(entry => renderHistoricoCard(entry, ligaLookup[entry.id] || null)).join('')}
     </div>`;
 }
 
@@ -216,48 +221,94 @@ function compartilharHistoricoWhatsApp(id) {
 let _historicoData = [];
 let _ligaPartidasData = [];
 
-// ── Partidas submetidas para a liga ──────────────────────────────
-
-async function carregarPartidasLiga(section) {
-  const user = typeof currentUser !== 'undefined' ? currentUser : null;
-  if (!user) return;
-
-  const placeholder = document.createElement('div');
-  placeholder.id = 'ligaPartidasSection';
-  section.appendChild(placeholder);
-
-  try {
-    const sb = await initSupabase();
-    const { data, error } = await sb
-      .from('partidas_liga')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('criado_em', { ascending: false })
-      .limit(20);
-
-    const el = document.getElementById('ligaPartidasSection');
-    if (!el) return;
-
-    if (error || !data?.length) { el.remove(); return; }
-
-    _ligaPartidasData = data;
-    el.innerHTML = `
-      <div class="section" style="margin-top:1rem;">
-        <div class="section-title">Minhas Partidas na Liga (${data.length})</div>
-        ${data.map(p => _renderCardLigaPartida(p)).join('')}
-      </div>`;
-  } catch {
-    const el = document.getElementById('ligaPartidasSection');
-    if (el) el.remove();
-  }
-}
+// ── Status badges ────────────────────────────────────────────────
 
 const _LIGA_STATUS_BADGE = {
   pendente_aprovacao: '<span class="liga-badge badge-pendente">⏳ Aguardando aprovação</span>',
   pendente_revisao:   '<span class="liga-badge badge-revisao">🔄 Pendente revisão</span>',
   aprovada:           '<span class="liga-badge badge-aprovada">✓ Aprovada</span>',
   reprovada:          '<span class="liga-badge badge-reprovada">✗ Reprovada</span>',
+  nao_submetida:      '<span class="liga-badge badge-nao-submetida">○ Não submetida</span>',
 };
+
+function renderHistoricoCard(entry, ligaPartida) {
+  const d = entry.dados || {};
+  const jogadores = d.jogadores || [];
+  const vencedor = jogadores.find(j => j.vencedor);
+
+  let dataStr = '';
+  if (d.data) {
+    const parts = d.data.split('-');
+    if (parts.length === 3) dataStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+
+  let statusBadge = '';
+  let actionBtn = '';
+
+  if (ligaPartida) {
+    statusBadge = _LIGA_STATUS_BADGE[ligaPartida.status] || '';
+    if (ligaPartida.status === 'pendente_revisao') {
+      actionBtn = `
+        <div style="margin-top:10px;">
+          <button class="btn-liga" style="font-size:0.82rem;padding:0.5rem 1rem;" onclick="_editarPorId('${ligaPartida.id}')">✏ Editar e Reenviar</button>
+        </div>`;
+    }
+  } else {
+    statusBadge = _LIGA_STATUS_BADGE.nao_submetida;
+    actionBtn = `
+      <div style="margin-top:10px;">
+        <button class="btn-liga" style="font-size:0.82rem;padding:0.5rem 1rem;" onclick="_abrirUploadHistorico('${entry.id}')">📤 Submeter para Liga</button>
+      </div>`;
+  }
+
+  return `
+    <div class="hist-card">
+      <div class="hist-card-header">
+        <span class="hist-local">${d.local || '—'}</span>
+        <span class="hist-data">${dataStr}</span>
+      </div>
+      ${statusBadge}
+      ${d.mapa ? `<div class="hist-mapa">🗺️ ${d.mapa}</div>` : ''}
+      ${vencedor ? `<div class="hist-vencedor">🏆 ${vencedor.nome} — ${vencedor.faccao}</div>` : ''}
+      <div class="hist-jogadores">
+        ${jogadores.map(j => `
+          <span class="hist-jogador${j.vencedor ? ' hist-vencedor-tag' : ''}">
+            ${j.nome}${j.faccao ? ' · ' + j.faccao : ''}${j.pontuacao != null ? ' · ' + j.pontuacao + 'pts' : ''}
+          </span>
+        `).join('')}
+      </div>
+      ${ligaPartida?.nota_embaixador ? `
+        <div style="margin-top:8px;padding:8px 10px;background:var(--surface2);border-radius:8px;font-family:sans-serif;font-size:0.78rem;color:var(--text2);line-height:1.4;">
+          <strong style="color:var(--text3);">Nota do embaixador:</strong> ${ligaPartida.nota_embaixador}
+        </div>` : ''}
+      ${actionBtn}
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <button class="btn-copiar" onclick="compartilharHistoricoWhatsApp('${entry.id}')" style="background:#25D366;color:white;font-size:0.75rem;">
+          📲 WhatsApp
+        </button>
+        ${d.ludopedia_id ? `
+        <a href="https://ludopedia.com.br/partida?id_partida=${d.ludopedia_id}" target="_blank"
+           class="btn-copiar" style="display:inline-block;text-decoration:none;font-size:0.75rem;background:rgba(74,143,48,0.15);border:1px solid rgba(74,143,48,0.4);color:#80d060;">
+          🎲 Ver na Ludopedia ↗
+        </a>` : ''}
+      </div>
+    </div>`;
+}
+
+// ── Partidas submetidas para a liga ──────────────────────────────
+
+function _renderLigaPartidasSection(section) {
+  if (!_ligaPartidasData.length) return;
+
+  const div = document.createElement('div');
+  div.id = 'ligaPartidasSection';
+  div.innerHTML = `
+    <div class="section" style="margin-top:1rem;">
+      <div class="section-title">Minhas Partidas na Liga (${_ligaPartidasData.length})</div>
+      ${_ligaPartidasData.map(p => _renderCardLigaPartida(p)).join('')}
+    </div>`;
+  section.appendChild(div);
+}
 
 function _renderCardLigaPartida(p) {
   const d = p.dados || {};
@@ -307,10 +358,31 @@ function _editarPorId(id) {
   }
 }
 
-function renderHistoricoCard(entry) {
+// ── Upload de partida do histórico para a liga ───────────────────
+
+let _histUploadPontuacao = null;
+let _histUploadJogadores = null;
+let _histEntrySubmitting = null;
+
+function _abrirUploadHistorico(entryId) {
+  if (!currentUser) { showAuthModal(); return; }
+  const entry = _historicoData.find(e => e.id === entryId);
+  if (!entry) return;
+
+  _histEntrySubmitting = entry;
+  _histUploadPontuacao = null;
+  _histUploadJogadores = null;
+
   const d = entry.dados || {};
   const jogadores = d.jogadores || [];
-  const vencedor = jogadores.find(j => j.vencedor);
+
+  let modal = document.getElementById('modalUploadHistorico');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modalUploadHistorico';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:9999;';
+    document.body.appendChild(modal);
+  }
 
   let dataStr = '';
   if (d.data) {
@@ -318,30 +390,135 @@ function renderHistoricoCard(entry) {
     if (parts.length === 3) dataStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
   }
 
-  return `
-    <div class="hist-card">
-      <div class="hist-card-header">
-        <span class="hist-local">${d.local || '—'}</span>
-        <span class="hist-data">${dataStr}</span>
+  const vencedor = jogadores.find(j => j.vencedor);
+
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;max-width:420px;width:92%;max-height:90vh;overflow-y:auto;font-family:sans-serif;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <span style="font-size:0.95rem;font-weight:600;color:var(--gold);">📤 Submeter para Liga</span>
+        <button onclick="document.getElementById('modalUploadHistorico').style.display='none'" style="background:none;border:none;color:var(--text3);font-size:1.5rem;cursor:pointer;line-height:1;">×</button>
       </div>
-      ${d.mapa ? `<div class="hist-mapa">🗺️ ${d.mapa}</div>` : ''}
-      ${vencedor ? `<div class="hist-vencedor">🏆 ${vencedor.nome} — ${vencedor.faccao}</div>` : ''}
-      <div class="hist-jogadores">
-        ${jogadores.map(j => `
-          <span class="hist-jogador${j.vencedor ? ' hist-vencedor-tag' : ''}">
-            ${j.nome}${j.faccao ? ' · ' + j.faccao : ''}${j.pontuacao != null ? ' · ' + j.pontuacao + 'pts' : ''}
-          </span>
-        `).join('')}
+      <div style="font-size:0.8rem;color:var(--text2);margin-bottom:0.25rem;">
+        <strong>${d.local || '—'}</strong>${dataStr ? ' · ' + dataStr : ''}${d.mapa ? ' · Mapa ' + d.mapa : ''}
       </div>
-      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <button class="btn-copiar" onclick="compartilharHistoricoWhatsApp('${entry.id}')" style="background:#25D366;color:white;font-size:0.75rem;">
-          📲 WhatsApp
-        </button>
-        ${d.ludopedia_id ? `
-        <a href="https://ludopedia.com.br/partida?id_partida=${d.ludopedia_id}" target="_blank"
-           class="btn-copiar" style="display:inline-block;text-decoration:none;font-size:0.75rem;background:rgba(74,143,48,0.15);border:1px solid rgba(74,143,48,0.4);color:#80d060;">
-          🎲 Ver na Ludopedia ↗
-        </a>` : ''}
+      ${vencedor ? `<div style="font-size:0.78rem;color:var(--gold);margin-bottom:0.75rem;">🏆 ${vencedor.nome} — ${vencedor.faccao}</div>` : ''}
+      <p style="font-size:0.78rem;color:var(--text3);margin-bottom:1rem;line-height:1.5;">
+        Envie as fotos obrigatórias para que o embaixador possa aprovar a partida.
+      </p>
+      <div class="upload-area-wrap">
+        <div class="upload-area" id="histUploadAreaPontuacao" onclick="document.getElementById('histInpFotoPontuacao').click()">
+          <div id="histPreviewPontuacao" class="upload-preview">
+            <div class="upload-icon">📸</div>
+            <div class="upload-label">Foto da Pontuação</div>
+            <div class="upload-hint">Toque para selecionar</div>
+          </div>
+          <input type="file" id="histInpFotoPontuacao" accept="image/*" style="display:none" onchange="_histOnFotoSelect('pontuacao',this)">
+        </div>
+        <div class="upload-area" id="histUploadAreaJogadores" onclick="document.getElementById('histInpFotoJogadores').click()">
+          <div id="histPreviewJogadores" class="upload-preview">
+            <div class="upload-icon">👥</div>
+            <div class="upload-label">Foto dos Jogadores</div>
+            <div class="upload-hint">Toque para selecionar</div>
+          </div>
+          <input type="file" id="histInpFotoJogadores" accept="image/*" style="display:none" onchange="_histOnFotoSelect('jogadores',this)">
+        </div>
       </div>
+      <button id="btnHistEnviarLiga" class="btn-liga" onclick="_enviarHistoricoParaLiga()" disabled style="margin-top:1rem;opacity:0.5;">📤 Enviar para Aprovação</button>
+      <div id="histUploadStatus" style="font-size:0.82rem;min-height:20px;margin-top:8px;text-align:center;color:var(--text3);"></div>
     </div>`;
+  modal.style.display = 'flex';
+}
+
+function _histOnFotoSelect(tipo, input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (tipo === 'pontuacao') _histUploadPontuacao = file;
+  else _histUploadJogadores = file;
+
+  const previewId = tipo === 'pontuacao' ? 'histPreviewPontuacao' : 'histPreviewJogadores';
+  const areaId    = tipo === 'pontuacao' ? 'histUploadAreaPontuacao' : 'histUploadAreaJogadores';
+  const preview   = document.getElementById(previewId);
+  const area      = document.getElementById(areaId);
+
+  if (preview) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;pointer-events:none;">`;
+    };
+    reader.readAsDataURL(file);
+  }
+  if (area) area.classList.add('has-image');
+
+  const btn = document.getElementById('btnHistEnviarLiga');
+  if (btn) {
+    const ok = _histUploadPontuacao && _histUploadJogadores;
+    btn.disabled = !ok;
+    btn.style.opacity = ok ? '1' : '0.5';
+  }
+}
+
+async function _enviarHistoricoParaLiga() {
+  if (!_histUploadPontuacao || !_histUploadJogadores || !_histEntrySubmitting) return;
+  if (!currentUser) { showAuthModal(); return; }
+
+  const btn    = document.getElementById('btnHistEnviarLiga');
+  const status = document.getElementById('histUploadStatus');
+  if (btn) btn.disabled = true;
+  if (status) { status.style.color = 'var(--gold)'; status.textContent = 'Enviando fotos...'; }
+
+  try {
+    const sb      = await initSupabase();
+    const uid     = currentUser.id;
+    const matchId = crypto.randomUUID();
+    const path1   = `${uid}/${matchId}/pontuacao.jpg`;
+    const path2   = `${uid}/${matchId}/jogadores.jpg`;
+
+    const blob1 = await _comprimirImagem(_histUploadPontuacao);
+    const blob2 = await _comprimirImagem(_histUploadJogadores);
+
+    const { error: e1 } = await sb.storage.from('fotos-partidas').upload(path1, blob1, { upsert: true, contentType: 'image/jpeg' });
+    if (e1) throw e1;
+    if (status) status.textContent = 'Enviando segunda foto...';
+
+    const { error: e2 } = await sb.storage.from('fotos-partidas').upload(path2, blob2, { upsert: true, contentType: 'image/jpeg' });
+    if (e2) throw e2;
+
+    const { data: d1 } = sb.storage.from('fotos-partidas').getPublicUrl(path1);
+    const { data: d2 } = sb.storage.from('fotos-partidas').getPublicUrl(path2);
+
+    if (status) status.textContent = 'Registrando partida...';
+
+    const nomeUser = currentUser.user_metadata?.display_name
+      || currentUser.user_metadata?.full_name
+      || currentUser.email?.split('@')[0] || 'Usuário';
+
+    const dadosFinais = {
+      ..._histEntrySubmitting.dados,
+      historico_id: _histEntrySubmitting.id,
+      submitter_name: nomeUser,
+    };
+
+    const { error: e3 } = await sb.from('partidas_liga').insert({
+      id: matchId,
+      user_id: uid,
+      status: 'pendente_aprovacao',
+      dados: dadosFinais,
+      foto_pontuacao_url: d1.publicUrl,
+      foto_jogadores_url: d2.publicUrl,
+    });
+    if (e3) throw e3;
+
+    if (status) { status.style.color = '#80d060'; status.textContent = '✓ Partida enviada! Aguardando aprovação do embaixador.'; }
+    if (btn) { btn.textContent = '✓ Enviado'; btn.style.opacity = '1'; }
+
+    // Fecha modal e recarrega histórico para refletir o novo status
+    setTimeout(() => {
+      const modal = document.getElementById('modalUploadHistorico');
+      if (modal) modal.style.display = 'none';
+      carregarHistorico();
+    }, 2000);
+  } catch (e) {
+    if (status) { status.style.color = '#f09080'; status.textContent = 'Erro: ' + (e.message || 'falha ao enviar'); }
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+  }
 }

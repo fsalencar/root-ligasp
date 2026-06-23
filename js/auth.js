@@ -439,6 +439,9 @@ async function _salvarOnboarding() {
     renderAuthUI();
     const modal = document.getElementById('onboardingModal');
     if (modal) modal.style.display = 'none';
+    // Re-verifica vinculação de conta agora que o nome de exibição foi definido
+    if (currentUser) sessionStorage.removeItem('linking_checked_' + currentUser.id);
+    if (typeof verificarVinculacaoJogador === 'function') verificarVinculacaoJogador();
   } catch (e) {
     if (nErr) { nErr.textContent = 'Erro: ' + e.message; }
   }

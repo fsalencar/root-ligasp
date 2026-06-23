@@ -1335,7 +1335,8 @@
   .badge-pendente  { background: rgba(200,160,80,0.15); color: var(--gold);   border: 1px solid rgba(200,160,80,0.3); }
   .badge-revisao   { background: var(--blue-bg);        color: #70a8f0;       border: 1px solid rgba(48,112,200,0.3); }
   .badge-aprovada  { background: var(--green-bg);       color: #80d060;       border: 1px solid rgba(74,143,48,0.3); }
-  .badge-reprovada { background: var(--red-bg);         color: #f08070;       border: 1px solid rgba(200,64,40,0.3); }
+  .badge-reprovada     { background: var(--red-bg);         color: #f08070;       border: 1px solid rgba(200,64,40,0.3); }
+  .badge-nao-submetida { background: rgba(120,120,140,0.1); color: var(--text3);  border: 1px solid rgba(120,120,140,0.25); }
 
   /* ===== UPLOAD DE FOTOS ===== */
   .upload-area-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
