@@ -24,6 +24,7 @@ async function initSupabase() {
     if (event === 'SIGNED_IN') {
       hideAuthModal();
       carregarPerfil(session.user.id);
+      if (_precisaCadastro(session.user)) _mostrarOnboarding();
       // Salva dados de contato pendentes (do cadastro via Ludopedia/Google)
       const pendingWA = localStorage.getItem('pending_whatsapp');
       if (pendingWA && currentUser) {
@@ -373,6 +374,74 @@ async function submitEmailRegister() {
 async function _submitAuthEmail() {
   if (_authMode === 'cadastrar') await submitEmailRegister();
   else await submitEmailLogin();
+}
+
+// ── Onboarding obrigatório para novos usuários ───────────────────
+function _precisaCadastro(user) {
+  const meta = user?.user_metadata || {};
+  return !meta.display_name || !meta.whatsapp;
+}
+
+function _mostrarOnboarding() {
+  let modal = document.getElementById('onboardingModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'onboardingModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:9999;';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;max-width:360px;width:90%;font-family:sans-serif;">
+      <div style="font-size:1.05rem;font-weight:700;color:var(--gold);margin-bottom:0.4rem;">Bem-vindo à Liga Root SP!</div>
+      <div style="font-size:0.82rem;color:var(--text3);margin-bottom:1.5rem;">Preencha os dados abaixo para participar da liga.</div>
+
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:0.72rem;color:var(--text3);letter-spacing:.05em;margin-bottom:4px;">NOME DE EXIBIÇÃO <span style="color:#f09080;">*</span></div>
+        <input id="obNome" type="text" maxlength="40" placeholder="Como seu nome aparecerá na liga"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:0.5rem 0.75rem;color:var(--text);font-size:0.88rem;box-sizing:border-box;">
+        <div id="obNomeErr" style="font-size:0.72rem;color:#f09080;min-height:14px;margin-top:3px;"></div>
+      </div>
+
+      <div style="margin-bottom:1.5rem;">
+        <div style="font-size:0.72rem;color:var(--text3);letter-spacing:.05em;margin-bottom:4px;">WHATSAPP <span style="color:#f09080;">*</span></div>
+        <input id="obWA" type="tel" maxlength="20" placeholder="Ex: 11999998888"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:0.5rem 0.75rem;color:var(--text);font-size:0.88rem;box-sizing:border-box;">
+        <div id="obWAErr" style="font-size:0.72rem;color:#f09080;min-height:14px;margin-top:3px;"></div>
+      </div>
+
+      <button onclick="_salvarOnboarding()"
+        style="width:100%;background:var(--gold);color:#1a1000;border:none;border-radius:var(--radius);padding:0.65rem;font-size:0.9rem;font-weight:700;cursor:pointer;">
+        Salvar e continuar
+      </button>
+    </div>`;
+  modal.style.display = 'flex';
+}
+
+async function _salvarOnboarding() {
+  const nome = document.getElementById('obNome')?.value?.trim();
+  const wa   = document.getElementById('obWA')?.value?.trim();
+  const nErr = document.getElementById('obNomeErr');
+  const wErr = document.getElementById('obWAErr');
+
+  let ok = true;
+  if (!nome) { if (nErr) nErr.textContent = 'Nome obrigatório.'; ok = false; } else { if (nErr) nErr.textContent = ''; }
+  if (!wa)   { if (wErr) wErr.textContent = 'WhatsApp obrigatório.'; ok = false; } else { if (wErr) wErr.textContent = ''; }
+  if (!ok) return;
+
+  try {
+    const sb = await initSupabase();
+    const { error } = await sb.auth.updateUser({ data: { display_name: nome, whatsapp: wa } });
+    if (error) throw error;
+    if (currentUser?.user_metadata) {
+      currentUser.user_metadata.display_name = nome;
+      currentUser.user_metadata.whatsapp = wa;
+    }
+    renderAuthUI();
+    const modal = document.getElementById('onboardingModal');
+    if (modal) modal.style.display = 'none';
+  } catch (e) {
+    if (nErr) { nErr.textContent = 'Erro: ' + e.message; }
+  }
 }
 
 async function _salvarWhatsApp() {
