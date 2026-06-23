@@ -1,10 +1,10 @@
 // Dados Root — Three.js ES Module
 const ROOT_FACES = [0, 0, 1, 1, 2, 3];
 
-// BoxGeometry face layout [+x,-x,+y,-y,+z,-z]
+// BoxGeometry fallback face layout [+x,-x,+y,-y,+z,-z]
 const BOX_FACE_VALUES = [3, 0, 2, 1, 1, 0];
 
-let THREE = null;
+let THREE = null, STLLoader = null;
 let renderer = null, scene = null, camera = null;
 let dice = [];
 let animFrame = null;
@@ -14,21 +14,27 @@ let showingResult = false;
 let lastTs = 0, ready = false;
 let diceMode = 'batalha';   // 'batalha' | 'capanga'
 let colorScheme = 'white';  // 'white' | 'black'
+let geoMap = { batalha: null, capanga: null };  // geometrias STL carregadas
 
 const ease    = t => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
 const easeOut = t => 1 - Math.pow(1 - t, 3);
 const LAND_T  = 0.60;
 
 const SCHEMES = {
-  white: { body: '#f0ede8', num: '#111111' },
-  black: { body: '#1a1209', num: '#c8a050' },
+  white: { body: '#f0ede8', num: '#111111', roughness: 0.35, metalness: 0.05 },
+  black: { body: '#1a1209', num: '#c8a050', roughness: 0.25, metalness: 0.20 },
 };
 
-// ── Three.js lazy load ────────────────────────────────────────────────────────
+// ── Three.js + STLLoader lazy load ────────────────────────────────────────────
 async function ensureThree() {
   if (THREE) return true;
   try {
-    THREE = await import('three');
+    const [threeModule, stlModule] = await Promise.all([
+      import('three'),
+      import('three/addons/loaders/STLLoader.js'),
+    ]);
+    THREE     = threeModule;
+    STLLoader = stlModule.STLLoader;
     return true;
   } catch(e) {
     const el = document.getElementById('diceStatus');
@@ -37,7 +43,24 @@ async function ensureThree() {
   }
 }
 
-// ── Canvas texture para uma face ──────────────────────────────────────────────
+// ── Carrega geometria STL ─────────────────────────────────────────────────────
+function loadSTLGeo(url) {
+  return new Promise(resolve => {
+    try {
+      new STLLoader().load(url, geo => {
+        geo.computeVertexNormals();
+        geo.center();
+        const box = new THREE.Box3().setFromObject(new THREE.Mesh(geo));
+        const sz  = new THREE.Vector3(); box.getSize(sz);
+        const s   = 1.3 / Math.max(sz.x, sz.y, sz.z);
+        geo.scale(s, s, s);
+        resolve(geo);
+      }, undefined, () => resolve(null));
+    } catch { resolve(null); }
+  });
+}
+
+// ── Canvas texture (fallback box) ─────────────────────────────────────────────
 function makeFaceTex(value, bodyColor, numColor) {
   const c = document.createElement('canvas');
   c.width = c.height = 256;
@@ -59,8 +82,20 @@ function makeFaceTex(value, bodyColor, numColor) {
   return new THREE.CanvasTexture(c);
 }
 
-// ── Cria um dado (BoxGeometry com texturas) ───────────────────────────────────
-function makeDie() {
+// ── Cria dado a partir de geometria STL ──────────────────────────────────────
+function makeDieSTL(geo) {
+  const s = SCHEMES[colorScheme];
+  const mat = new THREE.MeshStandardMaterial({
+    color: s.body, roughness: s.roughness, metalness: s.metalness,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.rotation.set(Math.random()*6, Math.random()*6, Math.random()*6);
+  mesh._isSTL = true;
+  return mesh;
+}
+
+// ── Cria dado fallback (BoxGeometry com texturas) ─────────────────────────────
+function makeDieBox() {
   const { body, num } = SCHEMES[colorScheme];
   const mats = BOX_FACE_VALUES.map(v =>
     new THREE.MeshStandardMaterial({ map: makeFaceTex(v, body, num), roughness: 0.30, metalness: 0.05 })
@@ -71,12 +106,8 @@ function makeDie() {
 }
 
 // ── Rotação alvo para que 'value' fique com face pra cima (+Y) ────────────────
-// BOX_FACE_VALUES: +X=3, -X=0, +Y=2, -Y=1, +Z=1, -Z=0
-// Rotação em Z para trazer cada face ao topo:
-//   rotZ=0     → +Y acima (value 2)
-//   rotZ=-π/2  → -X acima (value 0)
-//   rotZ=+π    → -Y acima (value 1)
-//   rotZ=+π/2  → +X acima (value 3)
+// Válido para BoxGeometry: +X=3, -X=0, +Y=2, -Y=1
+// Para STL, a face de cima pode não coincidir exatamente (depende da orientação do modelo).
 function getFaceUpEuler(value) {
   const rY = Math.floor(Math.random() * 4) * Math.PI / 2;
   switch(value) {
@@ -88,27 +119,43 @@ function getFaceUpEuler(value) {
   }
 }
 
-// ── Monta dados na cena conforme o modo ──────────────────────────────────────
+// ── Monta dados na cena ───────────────────────────────────────────────────────
 function setupDice() {
   dice.forEach(d => scene.remove(d));
   dice = [];
+
   if (diceMode === 'batalha') {
-    const d1 = makeDie(); d1.position.set(-1.65, 0, 0); scene.add(d1); dice.push(d1);
-    const d2 = makeDie(); d2.position.set( 1.65, 0, 0); scene.add(d2); dice.push(d2);
+    const geo = geoMap.batalha;
+    const d1 = geo ? makeDieSTL(geo) : makeDieBox();
+    const d2 = geo ? makeDieSTL(geo) : makeDieBox();
+    d1.position.set(-1.65, 0, 0);
+    d2.position.set( 1.65, 0, 0);
+    scene.add(d1, d2); dice.push(d1, d2);
   } else {
-    const d1 = makeDie(); d1.position.set(0, 0, 0); scene.add(d1); dice.push(d1);
+    const geo = geoMap.capanga;
+    const d1 = geo ? makeDieSTL(geo) : makeDieBox();
+    d1.position.set(0, 0, 0);
+    scene.add(d1); dice.push(d1);
   }
 }
 
-// ── Atualiza materiais ao trocar cor ─────────────────────────────────────────
+// ── Atualiza cores ao trocar esquema ─────────────────────────────────────────
 function rebuildDiceMaterials() {
-  const { body, num } = SCHEMES[colorScheme];
+  const { body, num, roughness, metalness } = SCHEMES[colorScheme];
   dice.forEach(die => {
-    BOX_FACE_VALUES.forEach((v, i) => {
-      die.material[i].map?.dispose();
-      die.material[i].map = makeFaceTex(v, body, num);
-      die.material[i].needsUpdate = true;
-    });
+    if (die._isSTL) {
+      die.material.color.set(body);
+      die.material.roughness  = roughness;
+      die.material.metalness  = metalness;
+      die.material.needsUpdate = true;
+    } else {
+      // BoxGeometry fallback — recria texturas
+      BOX_FACE_VALUES.forEach((v, i) => {
+        die.material[i].map?.dispose();
+        die.material[i].map = makeFaceTex(v, body, num);
+        die.material[i].needsUpdate = true;
+      });
+    }
   });
 }
 
@@ -129,7 +176,6 @@ async function initScene() {
 
   scene  = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(48, W/H, 0.1, 100);
-  // Ligeiramente acima para ver a face de cima após o resultado
   camera.position.set(0, 1.8, 5.4);
   camera.lookAt(0, 0, 0);
 
@@ -137,6 +183,16 @@ async function initScene() {
   const sun = new THREE.DirectionalLight(0xffffff, 1.5); sun.position.set(5,10,7); scene.add(sun);
   const fill= new THREE.DirectionalLight(0xc8a050, 0.4); fill.position.set(-5,-3,-6); scene.add(fill);
   const rim = new THREE.DirectionalLight(0x6099d0, 0.25); rim.position.set(0,-6,3); scene.add(rim);
+
+  const status = document.getElementById('diceStatus');
+  if (status) status.textContent = 'Carregando modelos...';
+
+  [geoMap.batalha, geoMap.capanga] = await Promise.all([
+    loadSTLGeo('assets/dice/batalha.stl'),
+    loadSTLGeo('assets/dice/capanga.stl'),
+  ]);
+
+  if (status) status.textContent = '';
 
   setupDice();
   ready = true;
@@ -153,7 +209,6 @@ function loop(ts) {
     rollT = Math.min(rollT + dt / 2.4, 1);
     const t = rollT;
 
-    // Animação de posição — só no modo batalha
     if (diceMode === 'batalha' && dice.length === 2) {
       let x1, x2;
       if (t < 0.40) {
@@ -176,19 +231,16 @@ function loop(ts) {
       dice[1].position.x = x2;
     }
 
-    // Captura quaternion inicial da fase de pouso
     if (t >= LAND_T && !landingStarted) {
       landingStarted = true;
       landQuatStarts = dice.map(d => d.quaternion.clone());
     }
 
     if (!landingStarted) {
-      // Fase de giro rápido
       const sp = 10;
       if (dice[0]) { dice[0].rotation.x += dt*sp*1.2; dice[0].rotation.y += dt*sp*0.75; }
       if (dice[1]) { dice[1].rotation.x += dt*sp*0.85; dice[1].rotation.y += dt*sp*1.35; dice[1].rotation.z += dt*sp*0.4; }
     } else {
-      // Fase de pouso: slerp até a face alvo
       const p = easeOut((t - LAND_T) / (1 - LAND_T));
       dice.forEach((d, i) => {
         if (targetQuats[i]) d.quaternion.slerpQuaternions(landQuatStarts[i], targetQuats[i], p);
@@ -198,7 +250,6 @@ function loop(ts) {
     if (rollT >= 1) {
       rolling = false;
       showingResult = true;
-      // Snap para rotação exata
       dice.forEach((d, i) => { if (targetQuats[i]) d.quaternion.copy(targetQuats[i]); });
       if (diceMode === 'batalha' && dice.length === 2) {
         dice[0].position.x = -1.65; dice[1].position.x = 1.65;
@@ -207,7 +258,6 @@ function loop(ts) {
     }
 
   } else if (!showingResult) {
-    // Idle — rotação suave enquanto aguarda rolar
     if (dice[0]) { dice[0].rotation.y += dt*0.35; dice[0].rotation.x += dt*0.09; }
     if (dice[1]) { dice[1].rotation.y -= dt*0.28; dice[1].rotation.x += dt*0.12; }
   }
@@ -294,6 +344,7 @@ window.setDiceMode = function(mode) {
     : '<strong style="color:var(--text2)">Dado de Root:</strong> 0 · 0 · 1 · 1 · 2 · 3';
   const el = document.getElementById('diceResultBox');
   if (el) { el.style.display = 'none'; el.innerHTML = ''; }
+  showingResult = false;
   if (ready) setupDice();
 };
 
