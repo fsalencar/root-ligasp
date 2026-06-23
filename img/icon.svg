@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#1a1209"/>
+  <text x="256" y="310" font-size="310" text-anchor="middle" fill="#c8a050">⚔</text>
+  <text x="256" y="460" font-size="72" text-anchor="middle" fill="#c8a050" font-family="Georgia,serif" letter-spacing="6">ROOT SP</text>
+</svg>

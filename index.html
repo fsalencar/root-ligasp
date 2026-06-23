@@ -4,7 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Root — Sorteio de Facções</title>
-  <link rel="stylesheet" href="css/style.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#c8a050">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Root SP">
+<link rel="apple-touch-icon" href="img/boxes/base.png">
+<link rel="stylesheet" href="css/style.css?v=2">
 
 </head>
 <body>
@@ -15,10 +21,39 @@
     <h1>Root — Sorteio de Facções</h1>
     <p>Seguindo as regras oficiais de Alcance · Liga Root SP</p>
   </div>
-  <button id="authBtn" onclick="showAuthModal()">🔐 Entrar</button>
-  <div id="userInfo"></div>
-  <div id="ludopediaStatus"></div>
+  <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+    <button id="btnInstallPWA" class="btn-install-pwa" onclick="instalarPWA()" style="display:none;">
+      📲 <span>Instalar app</span>
+    </button>
+    <button id="authBtn" onclick="showAuthModal()">🔐 Entrar</button>
+    <div id="userInfo"></div>
+    <div id="ludopediaStatus"></div>
+    <button class="btn-hamburger" onclick="abrirDiceDrawer()" title="Rolar dados de batalha">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
 </header>
+
+<!-- Overlay -->
+<div id="diceOverlay" class="dice-overlay" onclick="fecharDiceDrawer()"></div>
+
+<!-- Drawer de dados -->
+<div id="diceDrawer" class="dice-drawer">
+  <div class="dice-drawer-header">
+    <span style="font-family:Georgia,serif;color:var(--gold);font-size:1rem;">⚔ Dados de Batalha</span>
+    <button class="modal-close-btn" onclick="fecharDiceDrawer()">×</button>
+  </div>
+  <div style="padding:0 1rem 1rem;">
+    <canvas id="diceCanvas" style="width:100%;display:block;border-radius:var(--radius-lg);background:var(--surface2);"></canvas>
+    <div id="diceStatus" style="font-family:sans-serif;font-size:0.65rem;color:var(--text3);text-align:center;margin-top:4px;min-height:14px;line-height:1.3;"></div>
+    <div id="diceResultBox" style="display:none;justify-content:center;gap:32px;padding:0.75rem 0 0.25rem;"></div>
+    <button class="btn-rolar-dados" onclick="rolarDados()">⚔ Rolar</button>
+    <p style="font-family:sans-serif;font-size:0.72rem;color:var(--text3);text-align:center;margin:0.5rem 0 0;line-height:1.5;">
+      <strong style="color:var(--text2)">Dado de Root:</strong> 0 · 0 · 1 · 1 · 2 · 3<br>
+      Atacante = maior valor · Defensor = menor valor
+    </p>
+  </div>
+</div>
 
 <main class="main">
 
@@ -277,6 +312,8 @@
 <script src="js/partida.js?v=2"></script>
 <script src="js/historico.js?v=2"></script>
 <script src="js/liga.js?v=2"></script>
+<script src="js/dice.js?v=2"></script>
+<script src="js/pwa.js?v=2"></script>
 
 <footer style="background:var(--surface);border-top:1px solid var(--border);padding:1.5rem 2rem;margin-top:3rem;text-align:center;">
   <div style="max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:0.75rem;align-items:center;">

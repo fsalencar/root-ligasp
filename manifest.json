@@ -1,0 +1,26 @@
+{
+  "name": "Liga Root SP",
+  "short_name": "Root SP",
+  "description": "Sorteador de facções e gerenciador da Liga Root SP",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1a1209",
+  "theme_color": "#c8a050",
+  "lang": "pt-BR",
+  "categories": ["games"],
+  "icons": [
+    {
+      "src": "img/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "img/boxes/base.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
