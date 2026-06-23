@@ -23,6 +23,14 @@ async function initSupabase() {
     renderAuthUI();
     if (event === 'SIGNED_IN') {
       hideAuthModal();
+      // Salva dados de contato pendentes (do cadastro via Ludopedia/Google)
+      const pendingWA = localStorage.getItem('pending_whatsapp');
+      if (pendingWA && currentUser) {
+        localStorage.removeItem('pending_whatsapp');
+        initSupabase().then(sb => sb.auth.updateUser({ data: { whatsapp: pendingWA } }).then(() => {
+          if (currentUser?.user_metadata) currentUser.user_metadata.whatsapp = pendingWA;
+        }));
+      }
       if (typeof restoreTabFromHash === 'function') restoreTabFromHash();
       if (typeof carregarHistorico === 'function') carregarHistorico();
       // Inicia Ludopedia e depois pré-preenche o slot do próprio usuário
@@ -39,6 +47,10 @@ async function initSupabase() {
       }
     }
     if (event === 'SIGNED_OUT') {
+      // Limpa sessão Ludopedia da memória
+      if (typeof ludoToken !== 'undefined') { ludoToken = null; }
+      if (typeof ludoUser  !== 'undefined') { ludoUser  = null; }
+      localStorage.removeItem('ludo_token');
       if (typeof renderHistoricoLogout === 'function') renderHistoricoLogout();
       if (typeof renderLudopediaStatus === 'function') renderLudopediaStatus();
       if (typeof resetSlotProprio === 'function') resetSlotProprio();
@@ -62,6 +74,8 @@ let currentUser = null;
 
 // ── Login ────────────────────────────────────────────────────────
 async function loginGoogle() {
+  const wa = document.getElementById('authWhatsApp')?.value?.trim();
+  if (wa) localStorage.setItem('pending_whatsapp', wa);
   const sb = await initSupabase();
   await sb.auth.signInWithOAuth({
     provider: 'google',
@@ -72,19 +86,16 @@ async function loginGoogle() {
   });
 }
 
+function loginLudopediaWithPending() {
+  const wa = document.getElementById('authWhatsApp')?.value?.trim();
+  if (wa) localStorage.setItem('pending_whatsapp', wa);
+  if (typeof conectarLudopedia === 'function') conectarLudopedia();
+}
+
 async function loginEmail(email, senha) {
   const sb = await initSupabase();
   const { error } = await sb.auth.signInWithPassword({ email, password: senha });
-  if (error) {
-    if (error.message.includes('Invalid login')) {
-      // Tenta cadastrar
-      const { error: signUpError } = await sb.auth.signUp({ email, password: senha });
-      if (signUpError) throw signUpError;
-      showAuthMsg('Conta criada! Verifique seu email para confirmar.');
-    } else {
-      throw error;
-    }
-  }
+  if (error) throw error;
 }
 
 async function logout() {
@@ -103,17 +114,18 @@ async function logout() {
 
 // ── UI de autenticação ───────────────────────────────────────────
 function renderAuthUI() {
-  const btn = document.getElementById('authBtn');
-  const userInfo = document.getElementById('userInfo');
+  const btn         = document.getElementById('authBtn');
+  const cadastrarBtn = document.getElementById('cadastrarBtn');
+  const userInfo    = document.getElementById('userInfo');
   if (!btn) return;
 
   if (currentUser) {
     const nome   = currentUser.user_metadata?.display_name || currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Usuário';
     const avatar = currentUser.user_metadata?.avatar_url;
-    const ludoNome = (typeof ludoUser !== 'undefined') ? (ludoUser?.usuario || ludoUser?.nm_usuario) : null;
     const temLudo  = (typeof ludoToken !== 'undefined') && ludoToken;
 
     btn.style.display = 'none';
+    if (cadastrarBtn) cadastrarBtn.style.display = 'none';
     userInfo.style.display = 'flex';
     userInfo.innerHTML = `
       <button onclick="abrirModalPerfil()" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;padding:0;max-width:160px;" title="Ver perfil">
@@ -129,6 +141,7 @@ function renderAuthUI() {
     `;
   } else {
     btn.style.display = 'flex';
+    if (cadastrarBtn) cadastrarBtn.style.display = '';
     userInfo.style.display = 'none';
     userInfo.innerHTML = '';
   }
@@ -140,10 +153,11 @@ async function abrirModalPerfil() {
   if (!modal || !currentUser) return;
 
   const displayName = currentUser.user_metadata?.display_name || '';
-  const nome   = displayName || currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Usuário';
-  const avatar = currentUser.user_metadata?.avatar_url;
-  const email  = currentUser.email || '';
-  const userId = currentUser.id;
+  const nome    = displayName || currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Usuário';
+  const avatar  = currentUser.user_metadata?.avatar_url;
+  const email   = currentUser.email || '';
+  const userId  = currentUser.id;
+  const whatsapp = currentUser.user_metadata?.whatsapp || '';
   const temLudo   = (typeof ludoToken !== 'undefined') && ludoToken;
   const ludoNome  = temLudo ? ((typeof ludoUser !== 'undefined') ? (ludoUser?.usuario || ludoUser?.nm_usuario || '—') : '—') : null;
   const ludoIdNum = (typeof ludoUser !== 'undefined') ? ludoUser?.id_usuario : null;
@@ -182,6 +196,18 @@ async function abrirModalPerfil() {
           <button class="ludo-btn-sm" style="white-space:nowrap;" onclick="_salvarNomeExibicao()">Salvar</button>
         </div>
         <div id="perfilDisplayNameStatus" style="font-size:0.72rem;min-height:14px;margin-top:4px;font-family:sans-serif;"></div>
+      </div>
+
+      <!-- WhatsApp -->
+      <div class="perfil-section">
+        <div class="perfil-section-label">WHATSAPP</div>
+        <div style="display:flex;gap:6px;">
+          <input id="perfilWhatsApp" type="tel" value="${whatsapp}"
+            placeholder="Ex: 11999998888"
+            style="flex:1;font-size:0.85rem;">
+          <button class="ludo-btn-sm" style="white-space:nowrap;" onclick="_salvarWhatsApp()">Salvar</button>
+        </div>
+        <div id="perfilWhatsAppStatus" style="font-size:0.72rem;min-height:14px;margin-top:4px;font-family:sans-serif;"></div>
       </div>
 
       <!-- Ludopedia -->
@@ -249,8 +275,30 @@ async function _salvarNomeExibicao() {
   }
 }
 
-function showAuthModal() {
+let _authMode = 'entrar';
+
+function setAuthMode(mode) {
+  _authMode = mode;
+  const isEntrar = mode === 'entrar';
+  const tabEntrar    = document.getElementById('authTabEntrar');
+  const tabCadastrar = document.getElementById('authTabCadastrar');
+  const submitBtn    = document.getElementById('authSubmitBtn');
+  const extraFields  = document.getElementById('authCadastroExtra');
+  const subtitle     = document.getElementById('authSubtitle');
+  if (tabEntrar)    tabEntrar.classList.toggle('active', isEntrar);
+  if (tabCadastrar) tabCadastrar.classList.toggle('active', !isEntrar);
+  if (submitBtn)    submitBtn.textContent = isEntrar ? 'Entrar' : 'Criar conta';
+  if (extraFields)  extraFields.style.display = isEntrar ? 'none' : 'flex';
+  if (subtitle)     subtitle.textContent = isEntrar
+    ? 'Entre para salvar o histórico das suas partidas'
+    : 'Crie sua conta para participar da Liga Root SP';
+  const authMsg = document.getElementById('authMsg');
+  if (authMsg) { authMsg.textContent = ''; authMsg.style.display = 'none'; }
+}
+
+function showAuthModal(mode = 'entrar') {
   document.getElementById('authModal').style.display = 'flex';
+  setAuthMode(mode);
 }
 function hideAuthModal() {
   document.getElementById('authModal').style.display = 'none';
@@ -272,6 +320,46 @@ async function submitEmailLogin() {
     await loginEmail(email, senha);
     hideAuthModal();
   } catch(e) {
-    showAuthMsg(e.message || 'Erro ao entrar.', true);
+    showAuthMsg(e.message || 'Email ou senha incorretos.', true);
+  }
+}
+
+async function submitEmailRegister() {
+  const email = document.getElementById('authEmail').value.trim();
+  const senha = document.getElementById('authSenha').value;
+  const wa    = document.getElementById('authWhatsApp')?.value?.trim();
+  if (!email || !senha) { showAuthMsg('Preencha email e senha.', true); return; }
+  if (senha.length < 6)  { showAuthMsg('Senha deve ter mínimo 6 caracteres.', true); return; }
+  try {
+    const sb = await initSupabase();
+    const opts = wa ? { data: { whatsapp: wa } } : {};
+    const { error } = await sb.auth.signUp({ email, password: senha, options: opts });
+    if (error) throw error;
+    showAuthMsg('Conta criada! Verifique seu email para confirmar.');
+  } catch(e) {
+    showAuthMsg(e.message || 'Erro ao criar conta.', true);
+  }
+}
+
+async function _submitAuthEmail() {
+  if (_authMode === 'cadastrar') await submitEmailRegister();
+  else await submitEmailLogin();
+}
+
+async function _salvarWhatsApp() {
+  const inp = document.getElementById('perfilWhatsApp');
+  const el  = document.getElementById('perfilWhatsAppStatus');
+  const wa  = inp?.value?.trim();
+  if (!el) return;
+  el.style.color = 'var(--text3)'; el.textContent = 'Salvando...';
+  try {
+    const sb = await initSupabase();
+    const { error } = await sb.auth.updateUser({ data: { whatsapp: wa || null } });
+    if (error) throw error;
+    if (currentUser?.user_metadata) currentUser.user_metadata.whatsapp = wa || undefined;
+    el.style.color = '#80d060'; el.textContent = '✓ Salvo';
+    setTimeout(() => { if (el) el.textContent = ''; }, 2000);
+  } catch (e) {
+    el.style.color = '#f09080'; el.textContent = 'Erro: ' + e.message;
   }
 }

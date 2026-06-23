@@ -27,7 +27,8 @@
     <button id="btnInstallPWA" class="btn-install-pwa" onclick="instalarPWA()" style="display:none;">
       📲 <span>Instalar app</span>
     </button>
-    <button id="authBtn" onclick="showAuthModal()">🔐 Entrar</button>
+    <button id="authBtn" onclick="showAuthModal('entrar')">🔐 Entrar</button>
+    <button id="cadastrarBtn" onclick="showAuthModal('cadastrar')" style="background:transparent;border:1px solid var(--gold-dark);color:var(--gold);border-radius:8px;padding:5px 11px;cursor:pointer;font-size:0.82rem;font-family:sans-serif;">Cadastrar</button>
     <div id="userInfo"></div>
     <div id="ludopediaStatus"></div>
     <button class="btn-hamburger" onclick="abrirDiceDrawer()" title="Rolar dados de batalha">
@@ -73,11 +74,11 @@
 <main class="main">
 
   <div class="liga-tabs" style="flex-wrap:wrap;">
-    <button class="liga-tab active" data-tab="sorteio" onclick="switchTab('sorteio',this)" style="flex:1;min-width:100px;">⚔ Sorteio</button>
+    <button class="liga-tab active" data-tab="sorteio" onclick="switchTab('sorteio',this)" style="flex:1;min-width:100px;">⚔ Sorteio Completo</button>
     <button class="liga-tab" data-tab="partida" onclick="switchTab('partida',this)" style="flex:1;min-width:100px;">🎮 Partida em Andamento</button>
-    <button class="liga-tab" data-tab="mapa" onclick="switchTab('mapa',this)" style="flex:1;min-width:100px;">🗺️ Mapa & Clareiras</button>
-    <button class="liga-tab" data-tab="liga" onclick="switchTab('liga',this)" style="flex:1;min-width:100px;">🏆 Liga</button>
-    <button class="liga-tab" data-tab="historico" onclick="switchTab('historico',this)" style="flex:1;min-width:100px;">📋 Histórico</button>
+    <button class="liga-tab" data-tab="mapa" onclick="switchTab('mapa',this)" style="flex:1;min-width:100px;">🗺️ Sortear Mapa & Clareiras</button>
+    <button class="liga-tab" data-tab="liga" onclick="switchTab('liga',this)" style="flex:1;min-width:100px;">🏆 Registrar Resultado na Liga Root - SP</button>
+    <button class="liga-tab" data-tab="historico" onclick="switchTab('historico',this)" style="flex:1;min-width:100px;">📋 Histórico de Partidas</button>
   </div>
 
   <!-- ===== ABA SORTEIO ===== -->
@@ -279,14 +280,20 @@
   </div><!-- /tab-historico -->
 
 
-<!-- ===== MODAL DE LOGIN ===== -->
+<!-- ===== MODAL DE LOGIN / CADASTRO ===== -->
 <div class="auth-modal" id="authModal" onclick="if(event.target===this)hideAuthModal()">
   <div class="auth-box">
     <button class="auth-close" onclick="hideAuthModal()">✕</button>
 
+    <!-- Tabs Entrar / Cadastrar -->
+    <div class="auth-mode-tabs">
+      <button class="auth-mode-tab active" id="authTabEntrar" onclick="setAuthMode('entrar')">Entrar</button>
+      <button class="auth-mode-tab" id="authTabCadastrar" onclick="setAuthMode('cadastrar')">Cadastrar</button>
+    </div>
+
     <div class="auth-logo">⚔</div>
     <div class="auth-title">Liga Root SP</div>
-    <div class="auth-subtitle">Entre para salvar o histórico das suas partidas</div>
+    <div class="auth-subtitle" id="authSubtitle">Entre para salvar o histórico das suas partidas</div>
 
     <button class="auth-btn-google" onclick="loginGoogle()">
       <svg width="18" height="18" viewBox="0 0 18 18">
@@ -298,11 +305,21 @@
       Continuar com Google
     </button>
 
+    <button class="auth-btn-ludo" onclick="loginLudopediaWithPending()">
+      🎲 Continuar com Ludopedia
+    </button>
+
     <div class="auth-divider">ou</div>
 
     <input class="auth-input" type="email" id="authEmail" placeholder="Email">
     <input class="auth-input" type="password" id="authSenha" placeholder="Senha (mín. 6 caracteres)">
-    <button class="auth-btn-email" onclick="submitEmailLogin()">Entrar / Criar conta</button>
+
+    <!-- Campo extra só no modo Cadastrar -->
+    <div id="authCadastroExtra" style="display:none;flex-direction:column;gap:0.7rem;">
+      <input class="auth-input" type="tel" id="authWhatsApp" placeholder="WhatsApp (ex: 11999998888) — opcional">
+    </div>
+
+    <button class="auth-btn-email" id="authSubmitBtn" onclick="_submitAuthEmail()">Entrar</button>
     <div class="auth-msg" id="authMsg"></div>
 
     <div class="auth-footer">
