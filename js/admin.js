@@ -63,7 +63,7 @@ const _ADMIN_ROLE_BADGE = {
 };
 
 function _renderAdminRow(u) {
-  const isSelf       = u.user_id === currentUser?.id;
+  const isSelf       = u.id === currentUser?.id;
   const isSuperUser  = currentUserRole === 'super_user';
   const targetIsSuperUser = u.role === 'super_user';
   const badge = _ADMIN_ROLE_BADGE[u.role] || _ADMIN_ROLE_BADGE['jogador'];
@@ -75,7 +75,7 @@ function _renderAdminRow(u) {
       // Super user: pode definir jogador, embaixador ou admin (nunca super_user via UI)
       const opcoes = ['jogador', 'embaixador', 'admin'].filter(r => r !== u.role);
       acoes = opcoes.map(r => `
-        <button onclick="_definirRole('${u.user_id}','${r}')"
+        <button onclick="_definirRole('${u.id}','${r}')"
           class="btn-copiar" style="font-size:0.72rem;padding:3px 9px;${_estiloAcao(r)}">
           ${_iconeRole(r)} ${_labelRole(r)}
         </button>`).join('');
@@ -85,11 +85,11 @@ function _renderAdminRow(u) {
         // Admin não pode tocar em outro admin
         acoes = '';
       } else if (u.role === 'embaixador') {
-        acoes = `<button onclick="_definirRole('${u.user_id}','jogador')"
+        acoes = `<button onclick="_definirRole('${u.id}','jogador')"
           class="btn-copiar" style="font-size:0.72rem;padding:3px 9px;">
           👤 Remover Embaixador</button>`;
       } else {
-        acoes = `<button onclick="_definirRole('${u.user_id}','embaixador')"
+        acoes = `<button onclick="_definirRole('${u.id}','embaixador')"
           class="btn-copiar" style="font-size:0.72rem;padding:3px 9px;background:rgba(200,160,80,0.15);border-color:rgba(200,160,80,0.4);color:var(--gold);">
           🛡 Tornar Embaixador</button>`;
       }
@@ -97,7 +97,7 @@ function _renderAdminRow(u) {
   }
 
   return `
-    <div class="hist-card" id="admin-row-${u.user_id}" style="padding:10px 14px;margin-bottom:8px;">
+    <div class="hist-card" id="admin-row-${u.id}" style="padding:10px 14px;margin-bottom:8px;">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <div style="flex:1;min-width:0;">
           <div style="font-family:sans-serif;font-size:0.88rem;color:var(--text1);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
@@ -144,7 +144,7 @@ async function _definirRole(uid, novoRole) {
     try { data = JSON.parse(text); } catch { throw new Error('Resposta inválida: ' + text.slice(0, 200)); }
     if (!res.ok) throw new Error(data.error || 'Erro ao definir role');
 
-    const u = _adminUsuarios.find(x => x.user_id === uid);
+    const u = _adminUsuarios.find(x => x.id === uid);
     if (u) u.role = novoRole;
     _filtrarAdmin(_adminFiltro);
   } catch (e) {
