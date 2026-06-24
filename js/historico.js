@@ -432,6 +432,10 @@ function _abrirUploadHistorico(entryId) {
       <p style="font-size:0.78rem;color:var(--text3);margin-bottom:1rem;line-height:1.5;">
         Envie as fotos obrigatórias para que o embaixador possa aprovar a partida.
       </p>
+      <p style="font-family:sans-serif;font-size:0.72rem;color:var(--text3);margin-bottom:1rem;line-height:1.5;display:flex;align-items:flex-start;gap:5px;">
+        <span style="flex-shrink:0;">🤖</span>
+        <span>As fotos são verificadas automaticamente por IA. Conteúdo sexual, violento ou impróprio é bloqueado antes do envio.</span>
+      </p>
       <div class="upload-area-wrap">
         <div class="upload-area" id="histUploadAreaPontuacao" onclick="document.getElementById('histInpFotoPontuacao').click()">
           <div id="histPreviewPontuacao" class="upload-preview">
@@ -512,6 +516,22 @@ async function _enviarHistoricoParaLiga() {
 
     const { data: d1 } = sb.storage.from('fotos-partidas').getPublicUrl(path1);
     const { data: d2 } = sb.storage.from('fotos-partidas').getPublicUrl(path2);
+
+    if (status) status.textContent = 'Verificando fotos...';
+    const { data: { session } } = await sb.auth.getSession();
+    const jwt = session?.access_token;
+    const [mod1, mod2] = await Promise.all([
+      _checarFotoMod(jwt, d1.publicUrl),
+      _checarFotoMod(jwt, d2.publicUrl),
+    ]);
+    if (!mod1.ok) {
+      await sb.storage.from('fotos-partidas').remove([path1, path2]);
+      throw new Error(mod1.reason || 'Foto de pontuação reprovada na moderação.');
+    }
+    if (!mod2.ok) {
+      await sb.storage.from('fotos-partidas').remove([path1, path2]);
+      throw new Error(mod2.reason || 'Foto de jogadores reprovada na moderação.');
+    }
 
     if (status) status.textContent = 'Registrando partida...';
 
