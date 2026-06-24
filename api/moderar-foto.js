@@ -30,7 +30,7 @@ module.exports = async function handler(req, res) {
     // Chama Sightengine
     const params = new URLSearchParams({
       url,
-      models: 'nudity-2.0,gore,weapon,recreational_drug,violence,self-harm,hate-2.0',
+      models: 'nudity-2.1,gore-2.0,weapon,recreational_drug,violence,offensive-2.0,self-harm',
       api_user: SE_USER,
       api_secret: SE_SECRET,
     });
@@ -49,20 +49,33 @@ module.exports = async function handler(req, res) {
     const weapon    = seData.weapon            || {};
     const drug      = seData.recreational_drug || {};
     const viol      = seData.violence          || {};
-    const selfharm = seData.self_harm || {};
-    const hate     = seData.hate      || {};
+    const offensive = seData.offensive         || {};
+    const selfharm  = seData.self_harm         || {};
 
     const reprovada =
+      // Nudez (nudity-2.1)
       (nudity.sexual_activity  ?? 0) > 0.5 ||
       (nudity.sexual_display   ?? 0) > 0.5 ||
       (nudity.erotica          ?? 0) > 0.6 ||
-      (gore.prob               ?? 0) > 0.5 ||
+      // Gore (gore-2.0)
+      (gore.very_bloody        ?? 0) > 0.5 ||
+      (gore.body_organ         ?? 0) > 0.5 ||
+      (gore.serious_injury     ?? 0) > 0.5 ||
+      (gore.corpse             ?? 0) > 0.5 ||
+      // Armas (weapon)
       (weapon.classes?.firearm ?? 0) > 0.7 ||
       (weapon.classes?.knife   ?? 0) > 0.7 ||
+      // Drogas (recreational_drug)
       (drug.prob               ?? 0) > 0.7 ||
+      // Violência (violence)
       (viol.prob               ?? 0) > 0.7 ||
-      (selfharm.prob           ?? 0) > 0.7 ||
-      (hate.prob               ?? 0) > 0.7;
+      // Conteúdo ofensivo (offensive-2.0)
+      (offensive.nazi          ?? 0) > 0.7 ||
+      (offensive.supremacist   ?? 0) > 0.7 ||
+      (offensive.terrorist     ?? 0) > 0.7 ||
+      (offensive.middle_finger ?? 0) > 0.7 ||
+      // Automutilação (self-harm)
+      (selfharm.real           ?? 0) > 0.7;
 
     if (reprovada) {
       return res.json({ ok: false, reason: 'Conteúdo impróprio detectado na foto.' });
