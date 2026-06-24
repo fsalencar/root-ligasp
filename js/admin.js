@@ -130,9 +130,18 @@ async function _definirRole(uid, novoRole) {
   if (row) row.style.opacity = '0.5';
   try {
     const sb = await initSupabase();
-    const { error } = await sb.from('perfis')
-      .upsert({ user_id: uid, role: novoRole }, { onConflict: 'user_id' });
-    if (error) throw error;
+    const { data: { session } } = await sb.auth.getSession();
+    const jwt = session?.access_token;
+    if (!jwt) throw new Error('Sessão inválida');
+
+    const res = await fetch('/api/set-role', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwt}` },
+      body: JSON.stringify({ target_user_id: uid, role: novoRole }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erro ao definir role');
+
     const u = _adminUsuarios.find(x => x.user_id === uid);
     if (u) u.role = novoRole;
     _filtrarAdmin(_adminFiltro);
