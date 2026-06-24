@@ -40,6 +40,7 @@ async function carregarHistorico() {
 
     renderHistoricoData(section, histRes.data || [], ligaLookup);
     _renderLigaPartidasSection(section);
+    _carregarPartidasComoParticipante(section, user, sb);
     carregarHistoricoLudopedia(section);
   } catch (e) {
     renderHistoricoMensagem(section, '⚠️', 'Erro de conexão ao carregar histórico.');
@@ -521,4 +522,69 @@ async function _enviarHistoricoParaLiga() {
     if (status) { status.style.color = '#f09080'; status.textContent = 'Erro: ' + (e.message || 'falha ao enviar'); }
     if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
   }
+}
+
+// ── Partidas de outros onde o usuário aparece como jogador ────────
+
+async function _carregarPartidasComoParticipante(section, user, sb) {
+  const nome = user.user_metadata?.display_name || user.user_metadata?.full_name;
+  if (!nome) return;
+
+  try {
+    const { data, error } = await sb
+      .from('partidas_liga')
+      .select('*')
+      .neq('user_id', user.id)
+      .eq('status', 'aprovada')
+      .contains('dados', { jogadores: [{ nome }] })
+      .order('criado_em', { ascending: false })
+      .limit(30);
+
+    if (error || !data?.length) return;
+
+    const div = document.createElement('div');
+    div.id = 'participanteSection';
+    div.innerHTML = `
+      <div class="section" style="margin-top:1rem;">
+        <div class="section-title">✓ Partidas Aprovadas como Participante (${data.length})</div>
+        ${data.map(p => _renderCardParticipante(p, nome)).join('')}
+      </div>`;
+    section.appendChild(div);
+  } catch { /* silencioso */ }
+}
+
+function _renderCardParticipante(p, nomeUsuario) {
+  const d = p.dados || {};
+  const jogadores = d.jogadores || [];
+  const vencedor  = jogadores.find(j => j.vencedor);
+  const eu        = jogadores.find(j => j.nome === nomeUsuario);
+
+  let dataStr = '';
+  if (d.data) {
+    const parts = d.data.split('-');
+    if (parts.length === 3) dataStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+
+  return `
+    <div class="hist-card">
+      <div class="hist-card-header">
+        <span class="hist-local">${d.local || '—'}</span>
+        <span class="hist-data">${dataStr}</span>
+      </div>
+      <span class="liga-badge badge-aprovada">✓ Aprovada</span>
+      ${d.mapa ? `<div class="hist-mapa">🗺️ ${d.mapa}</div>` : ''}
+      ${vencedor ? `<div class="hist-vencedor">🏆 ${vencedor.nome} — ${vencedor.faccao}</div>` : ''}
+      ${eu ? `<div style="margin-top:6px;font-family:sans-serif;font-size:0.78rem;color:var(--text2);">
+        Sua facção: <strong>${eu.faccao || '—'}</strong>${eu.pontuacao != null ? ' · ' + eu.pontuacao + ' pts' : ''}${eu.vencedor ? ' 🏆' : ''}
+      </div>` : ''}
+      <div class="hist-jogadores" style="margin-top:6px;">
+        ${jogadores.map(j => `
+          <span class="hist-jogador${j.vencedor ? ' hist-vencedor-tag' : ''}">
+            ${j.nome}${j.nome === nomeUsuario ? ' <em style="color:var(--text3);font-style:normal;font-size:0.72em;">(você)</em>' : ''}${j.faccao ? ' · ' + j.faccao : ''}${j.pontuacao != null ? ' · ' + j.pontuacao + 'pts' : ''}
+          </span>`).join('')}
+      </div>
+      <div style="font-family:sans-serif;font-size:0.7rem;color:var(--text3);margin-top:8px;">
+        Enviada por: ${d.submitter_name || '—'}
+      </div>
+    </div>`;
 }
