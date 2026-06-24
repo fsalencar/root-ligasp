@@ -139,7 +139,9 @@ async function _definirRole(uid, novoRole) {
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwt}` },
       body: JSON.stringify({ target_user_id: uid, role: novoRole }),
     });
-    const data = await res.json();
+    const text = await res.text();
+    let data = {};
+    try { data = JSON.parse(text); } catch { throw new Error('Resposta inválida: ' + text.slice(0, 200)); }
     if (!res.ok) throw new Error(data.error || 'Erro ao definir role');
 
     const u = _adminUsuarios.find(x => x.user_id === uid);
