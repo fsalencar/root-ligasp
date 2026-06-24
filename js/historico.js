@@ -222,6 +222,29 @@ function compartilharHistoricoWhatsApp(id) {
 let _historicoData = [];
 let _ligaPartidasData = [];
 
+// ── Fotos da partida ─────────────────────────────────────────────
+
+function _renderFotosLiga(p) {
+  if (!p?.foto_pontuacao_url && !p?.foto_jogadores_url) return '';
+  return `
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      ${p.foto_pontuacao_url ? `
+        <a href="${p.foto_pontuacao_url}" target="_blank" rel="noopener"
+           style="flex:1;display:block;border-radius:6px;overflow:hidden;border:1px solid var(--border);text-decoration:none;">
+          <img src="${p.foto_pontuacao_url}" loading="lazy"
+               style="width:100%;height:80px;object-fit:cover;display:block;">
+          <div style="font-family:sans-serif;font-size:0.68rem;color:var(--text3);text-align:center;padding:3px 0;">📸 Pontuação</div>
+        </a>` : ''}
+      ${p.foto_jogadores_url ? `
+        <a href="${p.foto_jogadores_url}" target="_blank" rel="noopener"
+           style="flex:1;display:block;border-radius:6px;overflow:hidden;border:1px solid var(--border);text-decoration:none;">
+          <img src="${p.foto_jogadores_url}" loading="lazy"
+               style="width:100%;height:80px;object-fit:cover;display:block;">
+          <div style="font-family:sans-serif;font-size:0.68rem;color:var(--text3);text-align:center;padding:3px 0;">👥 Jogadores</div>
+        </a>` : ''}
+    </div>`;
+}
+
 // ── Status badges ────────────────────────────────────────────────
 
 const _LIGA_STATUS_BADGE = {
@@ -282,6 +305,7 @@ function renderHistoricoCard(entry, ligaPartida) {
         <div style="margin-top:8px;padding:8px 10px;background:var(--surface2);border-radius:8px;font-family:sans-serif;font-size:0.78rem;color:var(--text2);line-height:1.4;">
           <strong style="color:var(--text3);">Nota do embaixador:</strong> ${ligaPartida.nota_embaixador}
         </div>` : ''}
+      ${_renderFotosLiga(ligaPartida)}
       ${actionBtn}
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
         <button class="btn-copiar" onclick="compartilharHistoricoWhatsApp('${entry.id}')" style="background:#25D366;color:white;font-size:0.75rem;">
@@ -299,6 +323,7 @@ function renderHistoricoCard(entry, ligaPartida) {
 // ── Partidas submetidas para a liga ──────────────────────────────
 
 function _renderLigaPartidasSection(section) {
+  document.getElementById('ligaPartidasSection')?.remove();
   if (!_ligaPartidasData.length) return;
 
   const div = document.createElement('div');
@@ -344,6 +369,7 @@ function _renderCardLigaPartida(p) {
         <div style="margin-top:8px;padding:8px 10px;background:var(--surface2);border-radius:8px;font-family:sans-serif;font-size:0.78rem;color:var(--text2);line-height:1.4;">
           <strong style="color:var(--text3);">Nota do embaixador:</strong> ${p.nota_embaixador}
         </div>` : ''}
+      ${_renderFotosLiga(p)}
       ${podeEditar ? `
         <div style="margin-top:10px;">
           <button class="btn-liga" style="font-size:0.82rem;padding:0.5rem 1rem;" onclick="_editarPorId('${p.id}')">✏ Editar e Reenviar</button>
@@ -542,6 +568,9 @@ async function _carregarPartidasComoParticipante(section, user, sb) {
 
     if (error || !data?.length) return;
 
+    // Remove seção anterior caso carregarHistorico tenha sido chamado duas vezes
+    document.getElementById('participanteSection')?.remove();
+
     const div = document.createElement('div');
     div.id = 'participanteSection';
     div.innerHTML = `
@@ -583,6 +612,7 @@ function _renderCardParticipante(p, nomeUsuario) {
             ${j.nome}${j.nome === nomeUsuario ? ' <em style="color:var(--text3);font-style:normal;font-size:0.72em;">(você)</em>' : ''}${j.faccao ? ' · ' + j.faccao : ''}${j.pontuacao != null ? ' · ' + j.pontuacao + 'pts' : ''}
           </span>`).join('')}
       </div>
+      ${_renderFotosLiga(p)}
       <div style="font-family:sans-serif;font-size:0.7rem;color:var(--text3);margin-top:8px;">
         Enviada por: ${d.submitter_name || '—'}
       </div>
