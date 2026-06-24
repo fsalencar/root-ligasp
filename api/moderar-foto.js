@@ -78,7 +78,7 @@ module.exports = async function handler(req, res) {
       (selfharm.real           ?? 0) > 0.7;
 
     if (reprovada) {
-      return res.json({ ok: false, reason: 'Conteúdo impróprio detectado na foto.' });
+      return res.json({ ok: false, reason: '🚫 A IA identificou conteúdo proibido nesta foto (nudez, violência, armas ou material ofensivo). O envio foi bloqueado automaticamente.\n\nInsistir neste comportamento pode resultar em banimento da liga.\n\nSe acredita que houve um engano, procure um embaixador.' });
     }
 
     return res.json({ ok: true });

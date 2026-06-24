@@ -81,6 +81,7 @@
     <button class="liga-tab" data-tab="historico" onclick="switchTab('historico',this)" style="flex:1;min-width:100px;">📋 Histórico de Partidas</button>
     <button class="liga-tab" data-tab="aprovacoes" id="tabAprovacoes" onclick="switchTab('aprovacoes',this)" style="flex:1;min-width:100px;display:none;">🛡 Aprovações</button>
     <button class="liga-tab" data-tab="admin" id="tabAdmin" onclick="switchTab('admin',this)" style="flex:1;min-width:100px;display:none;">⚙ Admin</button>
+    <button class="liga-tab" data-tab="partidas" id="tabPartidas" onclick="switchTab('partidas',this)" style="flex:1;min-width:100px;display:none;">📊 Partidas</button>
   </div>
 
   <!-- ===== ABA SORTEIO ===== -->
@@ -294,6 +295,16 @@
     <!-- Conteúdo renderizado por admin.js -->
   </div><!-- /tab-admin -->
 
+  <!-- ===== ABA PARTIDAS (admin/super_user) ===== -->
+  <div class="liga-section" id="tab-partidas">
+    <!-- Conteúdo renderizado por partidas-admin.js -->
+  </div><!-- /tab-partidas -->
+
+  <!-- Modal detalhe partida -->
+  <div class="auth-modal" id="modalPartidaDetalhe" onclick="if(event.target===this)_fecharDetalhePartida()" style="align-items:flex-start;overflow-y:auto;">
+    <div class="auth-box" style="max-width:480px;max-height:90vh;overflow-y:auto;margin:auto;" id="modalPartidaDetalheBox"></div>
+  </div>
+
 
 <!-- ===== MODAL DE LOGIN / CADASTRO ===== -->
 <div class="auth-modal" id="authModal" onclick="if(event.target===this)hideAuthModal()">
@@ -360,6 +371,7 @@
 <script src="js/historico.js?v=2"></script>
 <script src="js/aprovacao.js?v=1"></script>
 <script src="js/admin.js?v=1"></script>
+<script src="js/partidas-admin.js?v=1"></script>
 <script src="js/liga.js?v=2"></script>
 <script type="module" src="js/dice.js?v=3"></script>
 <script src="js/pwa.js?v=2"></script>

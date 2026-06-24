@@ -432,10 +432,13 @@ function _abrirUploadHistorico(entryId) {
       <p style="font-size:0.78rem;color:var(--text3);margin-bottom:1rem;line-height:1.5;">
         Envie as fotos obrigatórias para que o embaixador possa aprovar a partida.
       </p>
-      <p style="font-family:sans-serif;font-size:0.72rem;color:var(--text3);margin-bottom:1rem;line-height:1.5;display:flex;align-items:flex-start;gap:5px;">
-        <span style="flex-shrink:0;">🤖</span>
-        <span>As fotos são verificadas automaticamente por IA. Conteúdo sexual, violento ou impróprio é bloqueado antes do envio.</span>
-      </p>
+      <div style="display:flex;align-items:flex-start;gap:10px;background:rgba(255,180,0,0.07);border:1px solid rgba(255,180,0,0.25);border-radius:8px;padding:10px 12px;margin-bottom:1rem;">
+        <span style="font-size:1.1rem;flex-shrink:0;margin-top:1px;">🤖</span>
+        <p style="font-family:sans-serif;font-size:0.78rem;color:var(--gold);line-height:1.5;margin:0;">
+          <strong>Todas as fotos são verificadas por IA antes do envio.</strong><br>
+          <span style="color:var(--text2);font-size:0.73rem;">Conteúdo sexual, violento, armas ou material ofensivo é bloqueado automaticamente. Envios inadequados podem resultar em banimento da liga.</span>
+        </p>
+      </div>
       <div class="upload-area-wrap">
         <div class="upload-area" id="histUploadAreaPontuacao" onclick="document.getElementById('histInpFotoPontuacao').click()">
           <div id="histPreviewPontuacao" class="upload-preview">
@@ -565,7 +568,7 @@ async function _enviarHistoricoParaLiga() {
       carregarHistorico();
     }, 2000);
   } catch (e) {
-    if (status) { status.style.color = '#f09080'; status.textContent = 'Erro: ' + (e.message || 'falha ao enviar'); }
+    if (status) { status.style.color = '#f09080'; status.style.whiteSpace = 'pre-line'; status.textContent = e.message || 'Falha ao enviar.'; }
     if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
   }
 }

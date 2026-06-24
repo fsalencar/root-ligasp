@@ -100,6 +100,9 @@ function _renderTabAdmin() {
   if (!tab) return;
   const visivel = ['admin', 'super_user'].includes(currentUserRole);
   tab.style.display = visivel ? '' : 'none';
+
+  const tabP = document.getElementById('tabPartidas');
+  if (tabP) tabP.style.display = visivel ? '' : 'none';
 }
 
 // ── Login ────────────────────────────────────────────────────────

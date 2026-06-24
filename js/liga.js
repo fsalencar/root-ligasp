@@ -55,7 +55,8 @@ function _activateTab(tab, btn) {
   if (tab === 'partida' && typeof renderPartida === 'function') renderPartida();
   if (tab === 'historico' && typeof carregarHistorico === 'function') carregarHistorico();
   if (tab === 'aprovacoes' && typeof carregarAprovacoes === 'function') carregarAprovacoes();
-  if (tab === 'admin'      && typeof carregarAdmin      === 'function') carregarAdmin();
+  if (tab === 'admin'      && typeof carregarAdmin          === 'function') carregarAdmin();
+  if (tab === 'partidas'   && typeof carregarPartidasAdmin  === 'function') carregarPartidasAdmin();
 }
 
 // Chamado pelos botões no HTML — atualiza a URL e ativa a aba
@@ -646,9 +647,13 @@ function renderUploadLiga() {
       <p style="font-family:sans-serif;font-size:0.78rem;color:var(--text3);margin-bottom:1rem;line-height:1.5;">
         Envie as fotos obrigatórias para que o embaixador possa aprovar a partida.
       </p>
-      <p style="font-family:sans-serif;font-size:0.72rem;color:var(--text3);margin-bottom:1rem;line-height:1.5;display:flex;align-items:flex-start;gap:5px;">
-        <span style="flex-shrink:0;">🤖</span>
-        <span>As fotos são verificadas automaticamente por IA. Conteúdo sexual, violento ou impróprio é bloqueado antes do envio.</span>
+      <div style="display:flex;align-items:flex-start;gap:10px;background:rgba(255,180,0,0.07);border:1px solid rgba(255,180,0,0.25);border-radius:8px;padding:10px 12px;margin-bottom:1rem;">
+        <span style="font-size:1.1rem;flex-shrink:0;margin-top:1px;">🤖</span>
+        <p style="font-family:sans-serif;font-size:0.78rem;color:var(--gold);line-height:1.5;margin:0;">
+          <strong>Todas as fotos são verificadas por IA antes do envio.</strong><br>
+          <span style="color:var(--text2);font-size:0.73rem;">Conteúdo sexual, violento, armas ou material ofensivo é bloqueado automaticamente. Envios inadequados podem resultar em banimento da liga.</span>
+        </p>
+      </div>
       </p>
       <div class="upload-area-wrap">
         <div class="upload-area" id="uploadAreaPontuacao" onclick="document.getElementById('inpFotoPontuacao').click()">
@@ -792,7 +797,7 @@ async function enviarParaLiga() {
     if (status) { status.style.color = '#80d060'; status.textContent = '✓ Partida enviada! Aguardando aprovação do embaixador.'; }
     if (btn) { btn.textContent = '✓ Enviado'; btn.disabled = true; btn.style.opacity = '1'; }
   } catch (e) {
-    if (status) { status.style.color = '#f09080'; status.textContent = 'Erro: ' + (e.message || 'falha ao enviar'); }
+    if (status) { status.style.color = '#f09080'; status.style.whiteSpace = 'pre-line'; status.textContent = e.message || 'Falha ao enviar.'; }
     if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
   }
 }
