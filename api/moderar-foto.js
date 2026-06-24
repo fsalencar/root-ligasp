@@ -30,7 +30,7 @@ module.exports = async function handler(req, res) {
     // Chama Sightengine
     const params = new URLSearchParams({
       url,
-      models: 'nudity-2.0,gore,weapon,recreational_drug,violence',
+      models: 'nudity-2.0,gore,weapon,recreational_drug,violence,self-harm,hate-symbol,offensive',
       api_user: SE_USER,
       api_secret: SE_SECRET,
     });
@@ -44,20 +44,27 @@ module.exports = async function handler(req, res) {
       return res.json({ ok: true, skipped: true });
     }
 
-    const nudity = seData.nudity           || {};
-    const gore   = seData.gore             || {};
-    const weapon = seData.weapon           || {};
-    const drug   = seData.recreational_drug || {};
-    const viol   = seData.violence         || {};
+    const nudity    = seData.nudity            || {};
+    const gore      = seData.gore              || {};
+    const weapon    = seData.weapon            || {};
+    const drug      = seData.recreational_drug || {};
+    const viol      = seData.violence          || {};
+    const selfharm  = seData.self_harm         || {};
+    const hate      = seData.hate_symbol       || {};
+    const offensive = seData.offensive         || {};
 
     const reprovada =
-      (nudity.sexual_activity ?? 0) > 0.5 ||
+      (nudity.sexual_activity  ?? 0) > 0.5 ||
       (nudity.sexual_display   ?? 0) > 0.5 ||
       (nudity.erotica          ?? 0) > 0.6 ||
       (gore.prob               ?? 0) > 0.5 ||
-      (weapon.prob             ?? 0) > 0.7 ||
+      (weapon.classes?.firearm ?? 0) > 0.7 ||
+      (weapon.classes?.knife   ?? 0) > 0.7 ||
       (drug.prob               ?? 0) > 0.7 ||
-      (viol.prob               ?? 0) > 0.7;
+      (viol.prob               ?? 0) > 0.7 ||
+      (selfharm.prob           ?? 0) > 0.7 ||
+      (hate.prob               ?? 0) > 0.7 ||
+      (offensive.prob          ?? 0) > 0.7;
 
     if (reprovada) {
       return res.json({ ok: false, reason: 'Conteúdo impróprio detectado na foto.' });
