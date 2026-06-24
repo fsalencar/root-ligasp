@@ -3,6 +3,13 @@
 let _adminUsuarios = [];
 let _adminFiltro = '';
 
+const _ROLE_INFO = [
+  { role: 'jogador',    icon: '👤', label: 'Jogador',    desc: 'Pode registrar partidas e ver o histórico.' },
+  { role: 'embaixador', icon: '🛡', label: 'Embaixador', desc: 'Aprova e reprova partidas enviadas para a liga.' },
+  { role: 'admin',      icon: '🔑', label: 'Admin',      desc: 'Gerencia embaixadores e jogadores. Acessa painel admin.' },
+  { role: 'super_user', icon: '⭐', label: 'Super User', desc: 'Acesso total. Pode promover admins. Não pode ser alterado.' },
+];
+
 async function carregarAdmin() {
   const section = document.getElementById('tab-admin');
   if (!section) return;
@@ -25,7 +32,20 @@ async function carregarAdmin() {
 }
 
 function _renderAdmin(section) {
+  const disclaimer = _ROLE_INFO.map(r => `
+    <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:1rem;flex-shrink:0;width:20px;text-align:center;">${r.icon}</span>
+      <div>
+        <span style="font-family:sans-serif;font-size:0.8rem;font-weight:600;color:var(--text1);">${r.label}</span>
+        <span style="font-family:sans-serif;font-size:0.78rem;color:var(--text3);margin-left:6px;">${r.desc}</span>
+      </div>
+    </div>`).join('');
+
   section.innerHTML = `
+    <div class="section">
+      <div class="section-title">Papéis (Roles)</div>
+      <div style="margin-bottom:1.25rem;">${disclaimer}</div>
+    </div>
     <div class="section">
       <div class="section-title">Gerenciar Jogadores (${_adminUsuarios.length})</div>
       <input type="text" id="adminSearch" placeholder="Buscar por nome ou email..."
@@ -59,41 +79,48 @@ const _ADMIN_ROLE_BADGE = {
   super_user: '<span class="liga-badge badge-aprovada">⭐ Super User</span>',
   admin:      '<span class="liga-badge badge-revisao">🔑 Admin</span>',
   embaixador: '<span class="liga-badge badge-pendente">🛡 Embaixador</span>',
-  jogador:    '<span class="liga-badge" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border);">Jogador</span>',
+  jogador:    '<span class="liga-badge" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border);">👤 Jogador</span>',
 };
 
 function _renderAdminRow(u) {
-  const isSelf       = u.id === currentUser?.id;
-  const isSuperUser  = currentUserRole === 'super_user';
+  const isSelf           = u.id === currentUser?.id;
+  const isSuperUser      = currentUserRole === 'super_user';
   const targetIsSuperUser = u.role === 'super_user';
   const badge = _ADMIN_ROLE_BADGE[u.role] || _ADMIN_ROLE_BADGE['jogador'];
+  const currentRole = u.role || 'jogador';
 
-  let acoes = '';
-
+  // Quais roles o caller pode atribuir a este usuário
+  let roleOptions = null;
   if (!isSelf && !targetIsSuperUser) {
     if (isSuperUser) {
-      // Super user: pode definir jogador, embaixador ou admin (nunca super_user via UI)
-      const opcoes = ['jogador', 'embaixador', 'admin'].filter(r => r !== u.role);
-      acoes = opcoes.map(r => `
-        <button onclick="_definirRole('${u.id}','${r}')"
-          class="btn-copiar" style="font-size:0.72rem;padding:3px 9px;${_estiloAcao(r)}">
-          ${_iconeRole(r)} ${_labelRole(r)}
-        </button>`).join('');
+      roleOptions = ['jogador', 'embaixador', 'admin'];
     } else {
-      // Admin: pode alternar jogador ↔ embaixador (não toca em outros admins)
-      if (u.role === 'admin') {
-        // Admin não pode tocar em outro admin
-        acoes = '';
-      } else if (u.role === 'embaixador') {
-        acoes = `<button onclick="_definirRole('${u.id}','jogador')"
-          class="btn-copiar" style="font-size:0.72rem;padding:3px 9px;">
-          👤 Remover Embaixador</button>`;
-      } else {
-        acoes = `<button onclick="_definirRole('${u.id}','embaixador')"
-          class="btn-copiar" style="font-size:0.72rem;padding:3px 9px;background:rgba(200,160,80,0.15);border-color:rgba(200,160,80,0.4);color:var(--gold);">
-          🛡 Tornar Embaixador</button>`;
-      }
+      // Admin: só pode alternar entre jogador e embaixador (não toca em admin)
+      if (currentRole !== 'admin') roleOptions = ['jogador', 'embaixador'];
     }
+  }
+
+  let seletor = '';
+  if (roleOptions) {
+    const opts = roleOptions.map(r => {
+      const info = _ROLE_INFO.find(x => x.role === r);
+      return `<option value="${r}" ${r === currentRole ? 'selected' : ''}>${info?.icon || ''} ${info?.label || r}</option>`;
+    }).join('');
+
+    seletor = `
+      <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;">
+        <select id="roleSelect-${u.id}"
+          onchange="_onRoleSelectChange('${u.id}', '${currentRole}')"
+          style="flex:1;min-width:140px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:0.4rem 0.6rem;color:var(--text);font-family:sans-serif;font-size:0.82rem;">
+          ${opts}
+        </select>
+        <button id="roleBtn-${u.id}" onclick="_salvarRole('${u.id}')"
+          disabled
+          style="background:var(--gold);color:#1a1000;border:none;border-radius:var(--radius);padding:0.4rem 1rem;font-size:0.8rem;font-weight:600;cursor:pointer;opacity:0.4;white-space:nowrap;">
+          Salvar
+        </button>
+        <span id="roleMsg-${u.id}" style="font-family:sans-serif;font-size:0.75rem;color:var(--text3);"></span>
+      </div>`;
   }
 
   return `
@@ -107,27 +134,33 @@ function _renderAdminRow(u) {
         </div>
         ${badge}
       </div>
-      ${acoes ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">${acoes}</div>` : ''}
+      ${seletor}
     </div>`;
 }
 
-function _estiloAcao(role) {
-  if (role === 'embaixador') return 'background:rgba(200,160,80,0.15);border-color:rgba(200,160,80,0.4);color:var(--gold);';
-  if (role === 'admin')      return 'background:var(--blue-bg);border-color:rgba(48,112,200,0.4);color:#70a8f0;';
-  return '';
+function _onRoleSelectChange(uid, currentRole) {
+  const sel = document.getElementById('roleSelect-' + uid);
+  const btn = document.getElementById('roleBtn-' + uid);
+  const msg = document.getElementById('roleMsg-' + uid);
+  if (!sel || !btn) return;
+  const changed = sel.value !== currentRole;
+  btn.disabled = !changed;
+  btn.style.opacity = changed ? '1' : '0.4';
+  if (msg) msg.textContent = '';
 }
 
-function _iconeRole(role) {
-  return { embaixador: '🛡', admin: '🔑', jogador: '👤' }[role] || '';
-}
+async function _salvarRole(uid) {
+  const sel = document.getElementById('roleSelect-' + uid);
+  const btn = document.getElementById('roleBtn-' + uid);
+  const msg = document.getElementById('roleMsg-' + uid);
+  if (!sel) return;
 
-function _labelRole(role) {
-  return { super_user: 'Super User', admin: 'Admin', embaixador: 'Embaixador', jogador: 'Jogador' }[role] || role;
-}
+  const novoRole = sel.value;
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+  btn.textContent = 'Salvando…';
+  if (msg) { msg.style.color = 'var(--text3)'; msg.textContent = ''; }
 
-async function _definirRole(uid, novoRole) {
-  const row = document.getElementById('admin-row-' + uid);
-  if (row) row.style.opacity = '0.5';
   try {
     const sb = await initSupabase();
     const { data: { session } } = await sb.auth.getSession();
@@ -142,13 +175,14 @@ async function _definirRole(uid, novoRole) {
     const text = await res.text();
     let data = {};
     try { data = JSON.parse(text); } catch { throw new Error('Resposta inválida: ' + text.slice(0, 200)); }
-    if (!res.ok) throw new Error(data.error || 'Erro ao definir role');
+    if (!res.ok) throw new Error(data.error || 'Erro ao salvar');
 
+    // Atualiza o estado local e re-renderiza a linha
     const u = _adminUsuarios.find(x => x.id === uid);
     if (u) u.role = novoRole;
     _filtrarAdmin(_adminFiltro);
   } catch (e) {
-    if (row) row.style.opacity = '1';
-    alert('Erro: ' + e.message);
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Salvar'; }
+    if (msg) { msg.style.color = '#f09080'; msg.textContent = 'Erro: ' + e.message; }
   }
 }
