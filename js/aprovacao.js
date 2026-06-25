@@ -149,6 +149,10 @@ async function _atualizarStatusPartida(id, updates) {
     if (error) throw error;
     if (card) card.remove();
     _aprovacaoData = _aprovacaoData.filter(p => p.id !== id);
+    const toastMsg = updates.status === 'aprovada' ? '✓ Partida aprovada' :
+                     updates.status === 'reprovada' ? '✗ Partida reprovada' : '↩ Revisão solicitada';
+    const toastTipo = updates.status === 'aprovada' ? 'success' : updates.status === 'reprovada' ? 'error' : 'info';
+    if (typeof mostrarToast === 'function') mostrarToast(toastMsg, toastTipo);
     if (!_aprovacaoData.length) {
       const section = document.getElementById('tab-aprovacoes');
       if (section) section.innerHTML = `

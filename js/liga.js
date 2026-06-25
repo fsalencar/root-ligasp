@@ -826,6 +826,22 @@ async function enviarParaLiga() {
   }
 }
 
+// ── Toast global ─────────────────────────────────────────────────
+
+function mostrarToast(msg, tipo = 'info') {
+  let c = document.getElementById('root-toast-container');
+  if (!c) {
+    c = document.createElement('div');
+    c.id = 'root-toast-container';
+    document.body.appendChild(c);
+  }
+  const t = document.createElement('div');
+  t.className = `root-toast root-toast-${tipo}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3100);
+}
+
 // ── Visualizador de foto global ──────────────────────────────────
 
 function _verFoto(url, titulo) {

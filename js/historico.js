@@ -133,7 +133,7 @@ function renderCardLudoPartida(p) {
         ${jogadores.map(j => {
           const nome   = _nomeExibicaoLudo(j);
           const faccao = _parseLudoObs(j.observacao);
-          return `<span class="hist-jogador${j.fl_vencedor ? ' hist-vencedor-tag' : ''}">
+          return `<span class="hist-jogador${j.fl_vencedor ? ' hist-vencedor-tag' : ''}" data-fac="${faccao || ''}">
             ${nome}${faccao ? ' · ' + faccao : ''}${j.vl_pontos != null ? ' · ' + j.vl_pontos + 'pts' : ''}
           </span>`;
         }).join('')}
@@ -151,13 +151,13 @@ function renderHistoricoLogout() {
   const section = document.getElementById('tab-historico');
   if (!section) return;
   section.innerHTML = `
-    <div class="section" style="text-align:center;padding:3rem 2rem;">
-      <div style="font-size:2.5rem;margin-bottom:1rem;">📋</div>
-      <div style="font-size:1rem;color:var(--text2);font-family:sans-serif;margin-bottom:0.5rem;">Faça login para ver seu histórico</div>
-      <div style="font-size:0.82rem;color:var(--text3);font-family:sans-serif;line-height:1.5;">
-        Suas partidas são salvas automaticamente ao gerar um resultado para a liga.
+    <div class="section">
+      <div class="empty-state">
+        <div class="empty-state-icon">⚔</div>
+        <div class="empty-state-title">Anais da Floresta</div>
+        <div class="empty-state-sub">Entre para consultar seus registros de batalha na liga.</div>
+        <button class="btn-liga" onclick="showAuthModal()" style="max-width:220px;margin:1.5rem auto 0;display:block;">Entrar</button>
       </div>
-      <button class="btn-liga" onclick="showAuthModal()" style="max-width:220px;margin:1.5rem auto 0;display:block;">🔐 Entrar</button>
     </div>`;
 }
 
@@ -173,11 +173,11 @@ function renderHistoricoData(section, data, ligaLookup = {}) {
   _historicoData = data;
   if (!data.length) {
     section.innerHTML = `
-      <div class="section" style="text-align:center;padding:3rem 2rem;">
-        <div style="font-size:2.5rem;margin-bottom:1rem;">📋</div>
-        <div style="font-size:1rem;color:var(--text2);font-family:sans-serif;">Nenhuma partida registrada ainda</div>
-        <div style="font-size:0.82rem;color:var(--text3);font-family:sans-serif;margin-top:0.5rem;line-height:1.5;">
-          Gere um resultado na aba 🏆 Liga para salvar automaticamente.
+      <div class="section">
+        <div class="empty-state">
+          <div class="empty-state-icon">🌲</div>
+          <div class="empty-state-title">Nenhum registro ainda</div>
+          <div class="empty-state-sub">Suas batalhas na floresta aparecerão aqui. Gere um resultado na aba Liga para começar.</div>
         </div>
       </div>`;
     return;
@@ -302,7 +302,7 @@ function renderHistoricoCard(entry, ligaPartida) {
       ${vencedor ? `<div class="hist-vencedor">🏆 ${vencedor.nome} — ${vencedor.faccao}</div>` : ''}
       <div class="hist-jogadores">
         ${jogadores.map(j => `
-          <span class="hist-jogador${j.vencedor ? ' hist-vencedor-tag' : ''}">
+          <span class="hist-jogador${j.vencedor ? ' hist-vencedor-tag' : ''}" data-fac="${j.faccao || ''}">
             ${j.nome}${j.faccao ? ' · ' + j.faccao : ''}${j.pontuacao != null ? ' · ' + j.pontuacao + 'pts' : ''}
           </span>
         `).join('')}
@@ -367,7 +367,7 @@ function _renderCardLigaPartida(p) {
       ${vencedor ? `<div class="hist-vencedor">🏆 ${vencedor.nome} — ${vencedor.faccao}</div>` : ''}
       <div class="hist-jogadores">
         ${jogadores.map(j => `
-          <span class="hist-jogador${j.vencedor ? ' hist-vencedor-tag' : ''}">
+          <span class="hist-jogador${j.vencedor ? ' hist-vencedor-tag' : ''}" data-fac="${j.faccao || ''}">
             ${j.nome}${j.faccao ? ' · ' + j.faccao : ''}${j.pontuacao != null ? ' · ' + j.pontuacao + 'pts' : ''}
           </span>`).join('')}
       </div>
@@ -637,7 +637,7 @@ function _renderCardParticipante(p, nomeUsuario) {
       </div>` : ''}
       <div class="hist-jogadores" style="margin-top:6px;">
         ${jogadores.map(j => `
-          <span class="hist-jogador${j.vencedor ? ' hist-vencedor-tag' : ''}">
+          <span class="hist-jogador${j.vencedor ? ' hist-vencedor-tag' : ''}" data-fac="${j.faccao || ''}">
             ${j.nome}${j.nome === nomeUsuario ? ' <em style="color:var(--text3);font-style:normal;font-size:0.72em;">(você)</em>' : ''}${j.faccao ? ' · ' + j.faccao : ''}${j.pontuacao != null ? ' · ' + j.pontuacao + 'pts' : ''}
           </span>`).join('')}
       </div>
