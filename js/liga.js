@@ -379,6 +379,23 @@ function _abrirPickerJogadorLiga(slotIdx) {
             </div>
           </div>`).join('') : `<div style="text-align:center;padding:1.5rem;font-family:sans-serif;color:var(--text3);font-size:0.82rem;">Nenhum jogador cadastrado.</div>`}
       </div>
+      <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px;">
+        <div id="ligaPickerAddForm" style="display:none;flex-direction:column;gap:8px;margin-bottom:8px;">
+          <input type="text" id="ligaPickerNovoNome" placeholder="Nome do novo jogador"
+            style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:0.45rem 0.7rem;color:var(--text);font-size:0.85rem;font-family:sans-serif;width:100%;">
+          <div style="display:flex;gap:8px;">
+            <button onclick="_confirmarAddJogadorLiga(${slotIdx})"
+              style="flex:1;background:var(--gold);color:#1a1209;border:none;border-radius:var(--radius);padding:0.4rem 0.75rem;font-size:0.82rem;font-weight:600;cursor:pointer;">Adicionar</button>
+            <button onclick="_toggleAddFormLiga(false)"
+              style="background:transparent;color:var(--text3);border:1px solid var(--border);border-radius:var(--radius);padding:0.4rem 0.75rem;font-size:0.82rem;cursor:pointer;">Cancelar</button>
+          </div>
+          <div id="ligaPickerAddMsg" style="font-family:sans-serif;font-size:0.75rem;color:#f09080;display:none;"></div>
+        </div>
+        <button onclick="_toggleAddFormLiga(true)" id="ligaPickerAddBtn"
+          style="width:100%;background:transparent;color:var(--gold);border:1px solid var(--border);border-radius:var(--radius);padding:0.5rem;font-size:0.82rem;font-family:sans-serif;cursor:pointer;text-align:center;">
+          + Adicionar novo jogador
+        </button>
+      </div>
     </div>`;
   modal.style.display = 'flex';
 }
@@ -396,6 +413,36 @@ function _selecionarJogadorLiga(slotIdx, nome) {
   const inp = document.getElementById('ligaName_' + slotIdx);
   if (inp) inp.value = nome;
   fecharGerenciarJogadores();
+}
+
+function _toggleAddFormLiga(mostrar) {
+  const form = document.getElementById('ligaPickerAddForm');
+  const btn  = document.getElementById('ligaPickerAddBtn');
+  if (!form || !btn) return;
+  form.style.display = mostrar ? 'flex' : 'none';
+  btn.style.display  = mostrar ? 'none' : '';
+  if (mostrar) document.getElementById('ligaPickerNovoNome')?.focus();
+}
+
+async function _confirmarAddJogadorLiga(slotIdx) {
+  const nomeEl = document.getElementById('ligaPickerNovoNome');
+  const msgEl  = document.getElementById('ligaPickerAddMsg');
+  const nome   = nomeEl?.value?.trim();
+  if (!nome) {
+    if (msgEl) { msgEl.textContent = 'Informe o nome do jogador.'; msgEl.style.display = ''; }
+    return;
+  }
+  if (msgEl) msgEl.style.display = 'none';
+
+  try {
+    const sb = await initSupabase();
+    const { error } = await sb.from('jogadores').insert({ user_id: currentUser.id, nome });
+    if (error) throw error;
+    if (typeof carregarJogadoresCadastrados === 'function') await carregarJogadoresCadastrados();
+    _selecionarJogadorLiga(slotIdx, nome);
+  } catch (e) {
+    if (msgEl) { msgEl.textContent = 'Erro: ' + e.message; msgEl.style.display = ''; }
+  }
 }
 
 function updateFacSelects() {
