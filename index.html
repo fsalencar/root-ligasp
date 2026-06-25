@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=9">
+<link rel="stylesheet" href="css/style.css?v=10">
 
 </head>
 <body>
@@ -305,6 +305,31 @@
     <!-- Conteúdo renderizado por partidas-admin.js -->
   </div><!-- /tab-partidas -->
 
+  <!-- Modal de boas-vindas -->
+  <div id="modalBoasVindas" style="display:none;position:fixed;inset:0;background:rgba(12,6,1,0.78);z-index:10000;align-items:center;justify-content:center;padding:1.5rem;">
+    <div style="background:var(--bg);border:1px solid var(--border2);border-radius:14px;max-width:400px;width:100%;padding:2rem 1.75rem;box-shadow:0 20px 60px rgba(0,0,0,0.55),inset 0 1px 0 rgba(255,248,220,0.5);position:relative;">
+      <div style="text-align:center;margin-bottom:1.2rem;">
+        <div style="font-size:2rem;margin-bottom:0.5rem;">⚔</div>
+        <div style="font-family:'Cinzel',Georgia,serif;font-size:1.1rem;letter-spacing:0.12em;color:var(--gold);margin-bottom:0.3rem;">Liga Root SP</div>
+        <div style="width:60px;height:1px;background:linear-gradient(to right,transparent,var(--border2),transparent);margin:0 auto 1rem;"></div>
+      </div>
+      <p style="font-family:Georgia,serif;font-size:0.88rem;color:var(--text2);line-height:1.7;margin-bottom:0.9rem;">
+        Bem-vindo aos anais da Liga Root SP. Este site registra as batalhas na floresta e mantém a ordem entre as facções.
+      </p>
+      <p style="font-family:Georgia,serif;font-size:0.85rem;color:var(--text2);line-height:1.7;margin-bottom:1.4rem;">
+        O site possui dois temas visuais: <strong style="color:var(--text);">Pergaminho</strong> (claro, fiel ao manual do jogo) e <strong style="color:var(--text);">Modo Noturno</strong> (escuro). Use o botão <span style="font-size:1rem;">🌙</span> no canto superior direito para alternar a qualquer momento.
+      </p>
+      <label style="display:flex;align-items:center;gap:9px;cursor:pointer;margin-bottom:1.4rem;font-family:sans-serif;font-size:0.8rem;color:var(--text3);">
+        <input type="checkbox" id="chkNaoExibir" style="accent-color:var(--gold);width:15px;height:15px;cursor:pointer;">
+        Não exibir novamente
+      </label>
+      <button onclick="_fecharBoasVindas()"
+        style="width:100%;padding:0.75rem;background:linear-gradient(180deg,#52360A 0%,#3c2606 100%);color:#DDB828;border:1px solid #281804;border-radius:10px;font-family:'Cinzel',Georgia,serif;font-size:0.92rem;letter-spacing:0.1em;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.28);">
+        Continuar
+      </button>
+    </div>
+  </div>
+
   <!-- Modal visualizador de foto -->
   <div id="modalFotoViewer" onclick="_fecharFoto()"
     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:2000;align-items:center;justify-content:center;padding:1rem;cursor:zoom-out;">
@@ -397,7 +422,7 @@
 <script src="js/aprovacao.js?v=2"></script>
 <script src="js/admin.js?v=2"></script>
 <script src="js/partidas-admin.js?v=2"></script>
-<script src="js/liga.js?v=4"></script>
+<script src="js/liga.js?v=5"></script>
 <script type="module" src="js/dice.js?v=3"></script>
 <script src="js/pwa.js?v=2"></script>
 

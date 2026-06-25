@@ -826,6 +826,21 @@ async function enviarParaLiga() {
   }
 }
 
+// ── Modal de boas-vindas ──────────────────────────────────────────
+
+function _fecharBoasVindas() {
+  if (document.getElementById('chkNaoExibir')?.checked) {
+    localStorage.setItem('root-boas-vindas-ok', '1');
+  }
+  document.getElementById('modalBoasVindas').style.display = 'none';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (localStorage.getItem('root-boas-vindas-ok') !== '1') {
+    document.getElementById('modalBoasVindas').style.display = 'flex';
+  }
+});
+
 // ── Modo noturno ─────────────────────────────────────────────────
 
 function toggleModoNoturno() {
