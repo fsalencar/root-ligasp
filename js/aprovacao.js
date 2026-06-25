@@ -78,8 +78,8 @@ function _renderCardAprovacao(p) {
           </span>`).join('')}
       </div>
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
-        ${p.foto_pontuacao_url ? `<a href="${p.foto_pontuacao_url}" target="_blank" class="btn-copiar" style="font-size:0.72rem;text-decoration:none;">📸 Pontuação</a>` : ''}
-        ${p.foto_jogadores_url ? `<a href="${p.foto_jogadores_url}" target="_blank" class="btn-copiar" style="font-size:0.72rem;text-decoration:none;">👥 Jogadores</a>` : ''}
+        ${p.foto_pontuacao_url ? `<button onclick="_verFoto('${p.foto_pontuacao_url}','📸 Pontuação')" class="btn-copiar" style="font-size:0.72rem;cursor:pointer;">📸 Pontuação</button>` : ''}
+        ${p.foto_jogadores_url ? `<button onclick="_verFoto('${p.foto_jogadores_url}','👥 Jogadores')" class="btn-copiar" style="font-size:0.72rem;cursor:pointer;">👥 Jogadores</button>` : ''}
       </div>
       ${p.nota_embaixador ? `
         <div style="margin-top:8px;padding:8px 10px;background:var(--surface2);border-radius:8px;font-family:sans-serif;font-size:0.78rem;color:var(--text2);">

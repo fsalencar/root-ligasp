@@ -303,6 +303,26 @@
     <!-- Conteúdo renderizado por partidas-admin.js -->
   </div><!-- /tab-partidas -->
 
+  <!-- Modal visualizador de foto -->
+  <div id="modalFotoViewer" onclick="_fecharFoto()"
+    style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:2000;align-items:center;justify-content:center;padding:1rem;cursor:zoom-out;">
+    <div style="position:relative;max-width:100%;max-height:100%;display:flex;flex-direction:column;align-items:center;gap:10px;" onclick="event.stopPropagation()">
+      <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:12px;">
+        <span id="modalFotoTitulo" style="font-family:sans-serif;font-size:0.82rem;color:rgba(255,255,255,0.6);"></span>
+        <div style="display:flex;gap:8px;">
+          <a id="modalFotoLink" href="#" target="_blank" rel="noopener"
+            style="font-family:sans-serif;font-size:0.75rem;color:rgba(255,255,255,0.5);text-decoration:none;padding:4px 8px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;">
+            ↗ Abrir original
+          </a>
+          <button onclick="_fecharFoto()"
+            style="background:transparent;border:none;color:rgba(255,255,255,0.6);font-size:1.4rem;cursor:pointer;padding:0 4px;line-height:1;">×</button>
+        </div>
+      </div>
+      <img id="modalFotoImg" src="" alt=""
+        style="max-width:min(90vw,800px);max-height:80vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,0.6);">
+    </div>
+  </div>
+
   <!-- Modal detalhe partida -->
   <div class="auth-modal" id="modalPartidaDetalhe" onclick="if(event.target===this)_fecharDetalhePartida()" style="align-items:flex-start;overflow-y:auto;">
     <div class="auth-box" style="max-width:480px;max-height:90vh;overflow-y:auto;margin:auto;" id="modalPartidaDetalheBox"></div>

@@ -826,6 +826,27 @@ async function enviarParaLiga() {
   }
 }
 
+// ── Visualizador de foto global ──────────────────────────────────
+
+function _verFoto(url, titulo) {
+  const modal = document.getElementById('modalFotoViewer');
+  if (!modal) return;
+  document.getElementById('modalFotoImg').src     = url;
+  document.getElementById('modalFotoLink').href   = url;
+  document.getElementById('modalFotoTitulo').textContent = titulo || '';
+  modal.style.display = 'flex';
+  document.addEventListener('keydown', _fotoKeyClose);
+}
+
+function _fecharFoto() {
+  const modal = document.getElementById('modalFotoViewer');
+  if (modal) modal.style.display = 'none';
+  document.getElementById('modalFotoImg').src = '';
+  document.removeEventListener('keydown', _fotoKeyClose);
+}
+
+function _fotoKeyClose(e) { if (e.key === 'Escape') _fecharFoto(); }
+
 // Inicialização — executada após todos os scripts carregarem
 init();
 sbLoadCounters();
