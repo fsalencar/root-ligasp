@@ -18,7 +18,7 @@ async function carregarAprovacoes() {
       .from('partidas_liga')
       .select('*')
       .in('status', ['pendente_aprovacao', 'pendente_revisao'])
-      .order('criado_em', { ascending: true });
+      .order('criado_em', { ascending: false });
 
     if (error) throw error;
     _aprovacaoData = data || [];
@@ -159,6 +159,13 @@ async function _atualizarStatusPartida(id, updates) {
     }
   } catch (e) {
     if (card) card.style.opacity = '1';
-    alert('Erro: ' + e.message);
+    let errDiv = card?.querySelector('.aprov-err');
+    if (!errDiv && card) {
+      errDiv = document.createElement('div');
+      errDiv.className = 'aprov-err';
+      errDiv.style.cssText = 'margin-top:8px;font-family:sans-serif;font-size:0.78rem;color:#f09080;padding:6px 10px;background:rgba(200,80,60,0.08);border-radius:6px;border:1px solid rgba(200,80,60,0.2);';
+      card.appendChild(errDiv);
+    }
+    if (errDiv) errDiv.textContent = 'Erro: ' + e.message;
   }
 }

@@ -420,7 +420,7 @@ function _renderTelaGerenciar() {
 }
 
 function _renderCardGerenciar(j) {
-  const nomeEsc = j.nome.replace(/'/g, "\\'");
+  const nomeEsc = j.nome.replace(/'/g, "\\'").replace(/"/g, '&quot;');
   const vinculado = j.player_user_id ? `<div class="jsel-sub" style="color:#80d060;font-size:0.65rem;">✓ Conta vinculada</div>` : '';
   return `
     <div class="jogador-sel-item" style="cursor:default;">
@@ -543,7 +543,7 @@ function _renderFormJogador(id, nome, ludoUsuario, ludoId, slotIdxParaVincular) 
       <input type="hidden" id="fjSlotIdx"   value="${slotIdxParaVincular ?? ''}">
 
       <div style="display:flex;gap:8px;">
-        ${id ? `<button class="ludo-btn-sm" style="color:#f09080;border-color:rgba(240,144,128,0.3);" onclick="_confirmarRemoverJogador('${id}','${nome.replace(/'/g, "\\'")}')">Remover</button>` : ''}
+        ${id ? `<button class="ludo-btn-sm" style="color:#f09080;border-color:rgba(240,144,128,0.3);" onclick="_confirmarRemoverJogador('${id}','${nome.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">Remover</button>` : ''}
         <button class="btn-liga" style="flex:1;" onclick="_confirmarSalvarJogador()">
           ${id ? 'Salvar' : '+ Cadastrar'}
         </button>

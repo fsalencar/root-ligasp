@@ -1315,7 +1315,7 @@
     border: 1px solid var(--border); border-radius: var(--radius);
     cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
-  .dice-opt-btn:hover { background: var(--surface3); }
+  .dice-opt-btn:hover { background: var(--surface2); filter: brightness(1.15); }
   .dice-opt-btn.active {
     background: var(--gold); color: #1a1209;
     border-color: var(--gold); font-weight: bold;

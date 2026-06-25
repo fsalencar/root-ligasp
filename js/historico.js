@@ -1,6 +1,10 @@
 // Histórico de partidas
 
+let _histCarregando = false;
+
 async function carregarHistorico() {
+  if (_histCarregando) return;
+  _histCarregando = true;
   const section = document.getElementById('tab-historico');
   if (!section) return;
 
@@ -45,6 +49,8 @@ async function carregarHistorico() {
   } catch (e) {
     renderHistoricoMensagem(section, '⚠️', 'Erro de conexão ao carregar histórico.');
     console.warn('Historico error:', e);
+  } finally {
+    _histCarregando = false;
   }
 }
 
@@ -602,7 +608,7 @@ async function _carregarPartidasComoParticipante(section, user, sb) {
         ${data.map(p => _renderCardParticipante(p, nome)).join('')}
       </div>`;
     section.appendChild(div);
-  } catch { /* silencioso */ }
+  } catch (e) { console.warn('Participante query error:', e); }
 }
 
 function _renderCardParticipante(p, nomeUsuario) {
