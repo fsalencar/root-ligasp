@@ -24,7 +24,9 @@ async function carregarAdmin() {
     const sb = await initSupabase();
     const { data, error } = await sb.rpc('get_all_users_for_admin');
     if (error) throw error;
-    _adminUsuarios = data || [];
+    const raw = data || [];
+    // Deduplica por id (o RPC pode retornar duplicatas via JOIN)
+    _adminUsuarios = raw.filter((u, i, arr) => arr.findIndex(x => x.id === u.id) === i);
     _renderAdmin(section);
   } catch (e) {
     section.innerHTML = `<div class="section"><div style="text-align:center;padding:2rem;font-family:sans-serif;color:#f09080;">Erro: ${e.message}</div></div>`;
