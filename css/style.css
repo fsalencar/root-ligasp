@@ -1821,6 +1821,17 @@
     border-bottom: 2px solid rgba(120,90,24,0.55) !important;
     box-shadow: 0 4px 20px rgba(0,0,0,0.50) !important;
   }
+  /* Header sempre escuro — forçar variáveis com valores claros dentro dele */
+  .header {
+    --text:   #E8D8B0;
+    --text2:  #C8B890;
+    --text3:  #9A8050;
+    --border: rgba(200,160,80,0.28);
+    --border2: rgba(200,160,80,0.48);
+    --surface2: #3A2810;
+    --gold: #C8A050;
+    --gold-light: #E0C070;
+  }
   .header h1    { color: #D0A428 !important; }
   .header p     { color: #A08848 !important; }
   .header-logo  { color: #B89020 !important; }
