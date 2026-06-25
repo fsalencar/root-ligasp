@@ -1394,19 +1394,20 @@
     --font-display: 'Cinzel', 'Palatino Linotype', Georgia, serif;
   }
 
-  /* Atmosfera de floresta — luz de tocha vinda do canto superior */
+  /* Atmosfera de floresta — luz de tocha dramática */
   body {
     background:
-      radial-gradient(ellipse at 12% 0%, rgba(210,130,40,0.07) 0%, transparent 55%),
-      radial-gradient(ellipse at 88% 100%, rgba(40,80,30,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 15% 0%, rgba(210,130,40,0.18) 0%, transparent 45%),
+      radial-gradient(ellipse at 85% 100%, rgba(40,90,28,0.14) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 50%, rgba(26,16,8,0) 0%, rgba(10,6,2,0.4) 100%),
       var(--bg);
   }
 
   /* ── Header ──────────────────────────────────────────────────── */
   .header {
-    background: linear-gradient(180deg, #1e1408 0%, var(--surface) 100%);
-    border-bottom: 1px solid var(--border2);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    background: linear-gradient(180deg, #120d04 0%, #1e1408 60%, var(--surface) 100%);
+    border-bottom: 2px solid rgba(200,160,80,0.4);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.55), 0 1px 0 rgba(200,160,80,0.15);
   }
   .header h1 {
     font-family: var(--font-display);
@@ -1428,28 +1429,30 @@
     color: var(--gold);
   }
 
-  /* ── Tabs ────────────────────────────────────────────────────── */
+  /* ── Tabs — capítulos de livro encadernado ───────────────────── */
   .liga-tabs {
-    border: 1px solid var(--border2);
-    box-shadow: 0 1px 6px rgba(0,0,0,0.3);
+    border: 1px solid rgba(200,160,80,0.3);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(200,160,80,0.08);
+    background: linear-gradient(180deg, #1c1208 0%, var(--surface) 100%);
   }
   .liga-tab {
     font-family: var(--font-display);
-    font-size: 0.78rem;
-    letter-spacing: 0.04em;
-    padding: 0.9rem 0.65rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 0.9rem 0.7rem;
+    border-right: 1px solid rgba(200,160,80,0.1);
     transition: background 0.15s, color 0.15s;
+    position: relative;
   }
   .liga-tab:hover {
-    background: rgba(200,160,80,0.08);
+    background: rgba(200,160,80,0.1);
     color: var(--gold-light);
   }
   .liga-tab.active {
-    background: var(--gold);
-    color: #150f04;
+    background: linear-gradient(180deg, rgba(200,160,80,0.22) 0%, rgba(200,160,80,0.08) 100%);
+    color: var(--gold-light);
     font-weight: 700;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-    box-shadow: inset 0 -2px 0 rgba(0,0,0,0.15);
+    box-shadow: inset 0 2px 0 var(--gold);
   }
 
   /* ── Botão primário (Sortear) ────────────────────────────────── */
@@ -1581,50 +1584,77 @@
      ROOT WOODLAND — FASE 2
      ─────────────────────────────────────────────────────────────── */
 
-  /* 1. Textura de papel — grão sutil sobre tudo */
+  /* 1. Grão de papel mais visível */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
     pointer-events: none;
     z-index: 9998;
-    opacity: 0.032;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.78' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
-    background-size: 200px 200px;
+    opacity: 0.07;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 180px 180px;
   }
 
-  /* 2. Divisor ornamental nas section-titles */
+  /* 1b. Vinheta escura nas bordas — efeito de pergaminho envelhecido */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9997;
+    background: radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(0,0,0,0.38) 100%);
+  }
+
+  /* 2. Section-title — ornamento ✦ no meio da linha */
+  .section-title {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 10px;
+  }
   .section-title::after {
-    background: linear-gradient(to right, var(--border2), transparent);
+    background: linear-gradient(to right, rgba(200,160,80,0.35), transparent 80%);
+    height: 1px;
+    flex: unset;
   }
 
-  /* 3. Profundidade nos cards — sensação de painel entalhado */
+  /* 3. Profundidade nos cards — sensação de painel entalhado em madeira */
   .section {
-    box-shadow: 0 2px 10px rgba(0,0,0,0.28), inset 0 1px 0 rgba(200,160,80,0.06), inset 0 -1px 0 rgba(0,0,0,0.15);
+    border-color: rgba(200,160,80,0.22);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(200,160,80,0.10), inset 0 -1px 0 rgba(0,0,0,0.2);
   }
   .hist-card {
-    box-shadow: inset 0 1px 0 rgba(200,160,80,0.05), inset 0 -1px 0 rgba(0,0,0,0.12);
+    border-left: 3px solid rgba(200,160,80,0.25) !important;
+    box-shadow: inset 0 1px 0 rgba(200,160,80,0.06), inset 0 -1px 0 rgba(0,0,0,0.14);
   }
   .hist-card:hover {
-    border-color: var(--border2);
-    box-shadow: 0 3px 12px rgba(0,0,0,0.22), inset 0 1px 0 rgba(200,160,80,0.08);
+    border-left-color: var(--gold) !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.28), inset 0 1px 0 rgba(200,160,80,0.12);
+    transform: translateX(2px);
+    transition: all 0.18s ease;
   }
 
-  /* 4. Badges — cores Root (verde musgo e bordô) */
+  /* 4. Badges — cores Root mais saturadas e distintas */
   .badge-aprovada {
-    background: rgba(45,90,28,0.28);
-    color: #72B850;
-    border: 1px solid rgba(60,115,38,0.5);
+    background: rgba(38,80,22,0.45) !important;
+    color: #7EC952 !important;
+    border: 1px solid rgba(62,120,35,0.6) !important;
   }
   .badge-reprovada {
-    background: rgba(90,20,38,0.28);
-    color: #C05878;
-    border: 1px solid rgba(122,30,58,0.5);
+    background: rgba(100,18,36,0.45) !important;
+    color: #E0607A !important;
+    border: 1px solid rgba(140,28,55,0.6) !important;
   }
   .badge-pendente {
-    background: rgba(160,110,20,0.18);
-    color: #D4A040;
-    border: 1px solid rgba(180,130,30,0.38);
+    background: rgba(140,95,10,0.35) !important;
+    color: #E0AE40 !important;
+    border: 1px solid rgba(180,130,20,0.5) !important;
+  }
+  .badge-revisao {
+    background: rgba(30,60,130,0.35) !important;
+    color: #80AAEE !important;
+    border: 1px solid rgba(50,90,180,0.5) !important;
   }
 
   /* 5 & 6. Variáveis de facção + chips coloridos */
@@ -1728,3 +1758,142 @@
     max-width: 280px;
     margin: 0 auto;
   }
+
+  /* ═══════════════════════════════════════════════════════════════
+     TEMA PERGAMINHO — papel envelhecido estilo Root
+     ─────────────────────────────────────────────────────────────── */
+
+  :root {
+    --bg:        #E8DDB8;
+    --surface:   #DFD0A0;
+    --surface2:  #D5C390;
+    --border:    rgba(90,60,15,0.20);
+    --border2:   rgba(90,60,15,0.38);
+    --gold:      #7A5C14;
+    --gold-light:#9A7820;
+    --gold-dark: #503C0A;
+    --text:      #1C1004;
+    --text2:     #46280C;
+    --text3:     #7A5824;
+    --red:       #8B1C10;
+    --red-bg:    rgba(140,28,16,0.10);
+    --green:     #265C14;
+    --green-bg:  rgba(38,92,20,0.10);
+    --blue:      #1A3E7A;
+    --blue-bg:   rgba(26,62,122,0.09);
+    --fox:       #B83818;
+    --mouse:     #9C5A10;
+    --rabbit:    #8A7808;
+  }
+
+  /* Fundo de pergaminho com manchas de envelhecimento */
+  body {
+    background:
+      radial-gradient(ellipse at 18% 12%, rgba(200,165,70,0.45) 0%, transparent 38%),
+      radial-gradient(ellipse at 82% 88%, rgba(175,155,85,0.35) 0%, transparent 38%),
+      radial-gradient(ellipse at 55% 42%, rgba(215,180,90,0.20) 0%, transparent 28%),
+      radial-gradient(ellipse at 10% 80%, rgba(160,140,70,0.25) 0%, transparent 30%),
+      #E8DDB8 !important;
+  }
+
+  /* Grão de papel mais presente */
+  body::before { opacity: 0.12 !important; }
+
+  /* Vinheta suave para dar profundidade sem escurecer demais */
+  body::after {
+    background: radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(90,60,10,0.22) 100%) !important;
+  }
+
+  /* Header — couro escuro envelhecido como capa de livro */
+  .header {
+    background: linear-gradient(180deg, #2C1A06 0%, #3A2410 60%, #46300E 100%) !important;
+    border-bottom: 2px solid rgba(160,120,40,0.55) !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+  }
+  .header h1 { color: #D4A840 !important; }
+  .header p  { color: #8A7040 !important; }
+  .header-logo { color: #C49030 !important; }
+
+  /* Sections — pele de pergaminho */
+  .section {
+    background: rgba(225,210,170,0.85) !important;
+    border: 1px solid rgba(90,60,15,0.25) !important;
+    box-shadow: 0 2px 12px rgba(60,35,5,0.18), inset 0 1px 0 rgba(255,240,200,0.5), inset 0 -1px 0 rgba(90,60,10,0.12) !important;
+  }
+
+  /* Cards de histórico */
+  .hist-card {
+    background: rgba(218,200,155,0.7) !important;
+    border: 1px solid rgba(90,60,15,0.22) !important;
+    border-left: 3px solid rgba(120,90,20,0.35) !important;
+  }
+  .hist-card:hover {
+    background: rgba(225,210,170,0.9) !important;
+    border-left-color: var(--gold) !important;
+    box-shadow: 0 3px 12px rgba(60,35,5,0.18) !important;
+  }
+
+  /* Tabs — pergaminho enrolado */
+  .liga-tabs {
+    background: linear-gradient(180deg, #3A2410 0%, #2C1A06 100%) !important;
+    border: 1px solid rgba(160,120,40,0.4) !important;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.45), inset 0 1px 0 rgba(200,160,60,0.1) !important;
+  }
+  .liga-tab { color: #C4A060 !important; border-right: 1px solid rgba(160,120,40,0.15) !important; }
+  .liga-tab:hover { background: rgba(200,160,60,0.12) !important; color: #E0C070 !important; }
+  .liga-tab.active {
+    background: linear-gradient(180deg, rgba(200,160,60,0.28) 0%, rgba(200,160,60,0.10) 100%) !important;
+    color: #E8C860 !important;
+    box-shadow: inset 0 2px 0 #C8A040 !important;
+  }
+
+  /* Inputs */
+  .player-field input,
+  .liga-field input,
+  .liga-field select,
+  .auth-input,
+  select, textarea {
+    background: rgba(232,218,178,0.8) !important;
+    border-color: rgba(90,60,15,0.28) !important;
+    color: var(--text) !important;
+  }
+  .player-field input::placeholder,
+  .auth-input::placeholder { color: var(--text3) !important; }
+
+  /* Modal */
+  .auth-box, .modal-box {
+    background: #DFD0A0 !important;
+    border: 1px solid rgba(90,60,15,0.3) !important;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.45) !important;
+  }
+  .auth-modal, #modalJogadores, #modalPartidaDetalhe, #modalFotoViewer {
+    background: rgba(20,10,2,0.72) !important;
+  }
+
+  /* Badges — tinta em papel */
+  .badge-aprovada  { background: rgba(30,80,15,0.18) !important; color: #2A6A10 !important; border: 1px solid rgba(38,100,18,0.4) !important; }
+  .badge-reprovada { background: rgba(120,15,25,0.15) !important; color: #9A1820 !important; border: 1px solid rgba(150,20,28,0.4) !important; }
+  .badge-pendente  { background: rgba(140,100,10,0.18) !important; color: #8A6808 !important; border: 1px solid rgba(160,120,12,0.4) !important; }
+  .badge-revisao   { background: rgba(18,42,100,0.14) !important; color: #1E3E8A !important; border: 1px solid rgba(24,52,130,0.38) !important; }
+
+  /* Botão principal */
+  .btn-sortear {
+    background: linear-gradient(180deg, #6A4A10 0%, #4E3408 100%) !important;
+    color: #E8C860 !important;
+    border: 1px solid #3A2606 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(220,180,80,0.2) !important;
+  }
+  .btn-sortear:hover {
+    background: linear-gradient(180deg, #7A5A18 0%, #5E4410 100%) !important;
+    box-shadow: 0 4px 14px rgba(60,35,5,0.4), inset 0 1px 0 rgba(220,180,80,0.25) !important;
+  }
+
+  /* Dice drawer */
+  .dice-drawer {
+    background: #DFD0A0 !important;
+    border-left: 1px solid rgba(90,60,15,0.3) !important;
+  }
+
+  /* Seção-title — tinta escura */
+  .section-title { color: #5A3C10 !important; }
+  .section-title::after { background: linear-gradient(to right, rgba(90,60,15,0.35), transparent 80%) !important; }
