@@ -86,7 +86,10 @@ const _ADMIN_ROLE_BADGE = {
 
 function _renderAdminRow(u) {
   const isSelf           = u.id === currentUser?.id;
-  const isSuperUser      = currentUserRole === 'super_user';
+  // Usa o role do próprio registro no RPC (mais confiável que currentUserRole)
+  const callerRow        = _adminUsuarios.find(x => x.id === currentUser?.id);
+  const callerRole       = callerRow?.role || currentUserRole;
+  const isSuperUser      = callerRole === 'super_user';
   const targetIsSuperUser = u.role === 'super_user';
   const badge = _ADMIN_ROLE_BADGE[u.role] || _ADMIN_ROLE_BADGE['jogador'];
   const currentRole = u.role || 'jogador';
