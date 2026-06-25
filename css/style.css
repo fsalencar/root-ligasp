@@ -1763,137 +1763,147 @@
      TEMA PERGAMINHO — papel envelhecido estilo Root
      ─────────────────────────────────────────────────────────────── */
 
+  /* ── Paleta fiel ao manual do Root (cores extraídas das imagens) */
   :root {
-    --bg:        #E8DDB8;
-    --surface:   #DFD0A0;
-    --surface2:  #D5C390;
-    --border:    rgba(90,60,15,0.20);
-    --border2:   rgba(90,60,15,0.38);
-    --gold:      #7A5C14;
-    --gold-light:#9A7820;
-    --gold-dark: #503C0A;
-    --text:      #1C1004;
-    --text2:     #46280C;
-    --text3:     #7A5824;
-    --red:       #8B1C10;
-    --red-bg:    rgba(140,28,16,0.10);
-    --green:     #265C14;
-    --green-bg:  rgba(38,92,20,0.10);
-    --blue:      #1A3E7A;
-    --blue-bg:   rgba(26,62,122,0.09);
-    --fox:       #B83818;
-    --mouse:     #9C5A10;
-    --rabbit:    #8A7808;
+    --bg:        #EDE4C4;   /* pergaminho envelhecido do manual */
+    --surface:   #E8D9B0;   /* levemente mais escuro — quase idêntico */
+    --surface2:  #DED0A4;   /* inputs e cards secundários */
+    --border:    rgba(42,36,24,0.14);
+    --border2:   rgba(42,36,24,0.28);
+    --gold:      #7A5C10;   /* âmbar de tinta, não ouro digital */
+    --gold-light:#9A7418;
+    --gold-dark: #4E3A08;
+    --text:      #160C04;   /* tinta ferrogálica quase preta */
+    --text2:     #3A1E0A;
+    --text3:     #7A5828;
+    --red:       #8C1C10;
+    --red-bg:    rgba(140,28,16,0.09);
+    --green:     #2C6418;
+    --green-bg:  rgba(44,100,24,0.10);
+    --blue:      #1A4898;
+    --blue-bg:   rgba(26,72,152,0.09);
+    --fox:       #CC5808;
+    --mouse:     #C47818;
+    --rabbit:    #988408;
+    /* Facções — cores canônicas do jogo */
+    --fac-marquesa:  #D05808;
+    --fac-eyrie:     #1858B4;
+    --fac-alianca:   #2E6C18;
+    --fac-vagabundo: #786850;
+    --fac-companhia: #1A8080;
+    --fac-lacertas:  #B08808;
+    --fac-ducado:    #644898;
+    --fac-corvina:   #385468;
+    --fac-lord:      #8C1E28;
+    --fac-guardioes: #4E6C3A;
   }
 
-  /* Fundo de pergaminho com manchas de envelhecimento */
+  /* Fundo — pergaminho com manchas naturais de envelhecimento */
   body {
     background:
-      radial-gradient(ellipse at 18% 12%, rgba(200,165,70,0.45) 0%, transparent 38%),
-      radial-gradient(ellipse at 82% 88%, rgba(175,155,85,0.35) 0%, transparent 38%),
-      radial-gradient(ellipse at 55% 42%, rgba(215,180,90,0.20) 0%, transparent 28%),
-      radial-gradient(ellipse at 10% 80%, rgba(160,140,70,0.25) 0%, transparent 30%),
-      #E8DDB8 !important;
+      radial-gradient(ellipse at 12% 8%,  rgba(200,168,72,0.22) 0%, transparent 38%),
+      radial-gradient(ellipse at 88% 92%, rgba(175,152,68,0.18) 0%, transparent 38%),
+      radial-gradient(ellipse at 40% 60%, rgba(185,158,70,0.10) 0%, transparent 28%),
+      #EDE4C4 !important;
   }
 
-  /* Grão de papel mais presente */
-  body::before { opacity: 0.12 !important; }
+  /* Grão de linho — visível como fibra de papel */
+  body::before { opacity: 0.10 !important; }
 
-  /* Vinheta suave para dar profundidade sem escurecer demais */
+  /* Vinheta das bordas — como nas páginas físicas do manual */
   body::after {
-    background: radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(90,60,10,0.22) 100%) !important;
+    background: radial-gradient(ellipse at 50% 50%, transparent 52%, rgba(42,36,16,0.20) 100%) !important;
   }
 
-  /* Header — couro escuro envelhecido como capa de livro */
+  /* Header — couro escuro da capa, como a borda decorativa */
   .header {
-    background: linear-gradient(180deg, #2C1A06 0%, #3A2410 60%, #46300E 100%) !important;
-    border-bottom: 2px solid rgba(160,120,40,0.55) !important;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+    background: linear-gradient(180deg, #1A1006 0%, #26180A 60%, #32200E 100%) !important;
+    border-bottom: 2px solid rgba(120,90,24,0.55) !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.50) !important;
   }
-  .header h1 { color: #D4A840 !important; }
-  .header p  { color: #8A7040 !important; }
-  .header-logo { color: #C49030 !important; }
+  .header h1    { color: #D0A428 !important; }
+  .header p     { color: #6E5428 !important; }
+  .header-logo  { color: #B89020 !important; }
 
-  /* Sections — pele de pergaminho */
+  /* Sections — página de pergaminho limpa, bordas de tinta fina */
   .section {
-    background: rgba(225,210,170,0.85) !important;
-    border: 1px solid rgba(90,60,15,0.25) !important;
-    box-shadow: 0 2px 12px rgba(60,35,5,0.18), inset 0 1px 0 rgba(255,240,200,0.5), inset 0 -1px 0 rgba(90,60,10,0.12) !important;
+    background: rgba(237,228,196,0.90) !important;
+    border: 1px solid rgba(42,36,24,0.16) !important;
+    box-shadow: 0 1px 8px rgba(42,28,6,0.12),
+                inset 0 1px 0 rgba(255,248,224,0.60),
+                inset 0 -1px 0 rgba(42,28,6,0.08) !important;
   }
 
-  /* Cards de histórico */
+  /* Cards de histórico — ligeiramente mais escuros que a página */
   .hist-card {
-    background: rgba(218,200,155,0.7) !important;
-    border: 1px solid rgba(90,60,15,0.22) !important;
-    border-left: 3px solid rgba(120,90,20,0.35) !important;
+    background: rgba(226,214,178,0.70) !important;
+    border: 1px solid rgba(42,36,24,0.14) !important;
+    border-left: 3px solid rgba(90,64,18,0.25) !important;
   }
   .hist-card:hover {
-    background: rgba(225,210,170,0.9) !important;
-    border-left-color: var(--gold) !important;
-    box-shadow: 0 3px 12px rgba(60,35,5,0.18) !important;
+    background: rgba(237,228,196,0.92) !important;
+    border-left-color: rgba(122,92,16,0.65) !important;
+    box-shadow: 0 2px 8px rgba(42,28,6,0.14) !important;
+    transform: translateX(2px);
   }
 
-  /* Tabs — pergaminho enrolado */
+  /* Tabs — couro escuro (igual ao header, como capa do livro) */
   .liga-tabs {
-    background: linear-gradient(180deg, #3A2410 0%, #2C1A06 100%) !important;
-    border: 1px solid rgba(160,120,40,0.4) !important;
-    box-shadow: 0 3px 12px rgba(0,0,0,0.45), inset 0 1px 0 rgba(200,160,60,0.1) !important;
+    background: linear-gradient(180deg, #1A1006 0%, #26180A 100%) !important;
+    border: 1px solid rgba(120,90,24,0.40) !important;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.45) !important;
   }
-  .liga-tab { color: #C4A060 !important; border-right: 1px solid rgba(160,120,40,0.15) !important; }
-  .liga-tab:hover { background: rgba(200,160,60,0.12) !important; color: #E0C070 !important; }
+  .liga-tab { color: #B89840 !important; border-right: 1px solid rgba(120,90,24,0.14) !important; }
+  .liga-tab:hover { background: rgba(168,130,36,0.14) !important; color: #D0B050 !important; }
   .liga-tab.active {
-    background: linear-gradient(180deg, rgba(200,160,60,0.28) 0%, rgba(200,160,60,0.10) 100%) !important;
-    color: #E8C860 !important;
-    box-shadow: inset 0 2px 0 #C8A040 !important;
+    background: linear-gradient(180deg, rgba(168,130,36,0.28) 0%, rgba(168,130,36,0.08) 100%) !important;
+    color: #DDB840 !important;
+    box-shadow: inset 0 2px 0 #B89010 !important;
   }
 
-  /* Inputs */
-  .player-field input,
-  .liga-field input,
-  .liga-field select,
-  .auth-input,
-  select, textarea {
-    background: rgba(232,218,178,0.8) !important;
-    border-color: rgba(90,60,15,0.28) !important;
+  /* Inputs — campo de pergaminho */
+  .player-field input, .liga-field input, .liga-field select,
+  .auth-input, select, textarea {
+    background: rgba(237,228,196,0.85) !important;
+    border-color: rgba(42,36,24,0.20) !important;
     color: var(--text) !important;
   }
   .player-field input::placeholder,
   .auth-input::placeholder { color: var(--text3) !important; }
 
-  /* Modal */
+  /* Modais — mesma pele de pergaminho */
   .auth-box, .modal-box {
-    background: #DFD0A0 !important;
-    border: 1px solid rgba(90,60,15,0.3) !important;
-    box-shadow: 0 16px 48px rgba(0,0,0,0.45) !important;
+    background: #E8D9B0 !important;
+    border: 1px solid rgba(42,36,24,0.22) !important;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.48) !important;
   }
   .auth-modal, #modalJogadores, #modalPartidaDetalhe, #modalFotoViewer {
-    background: rgba(20,10,2,0.72) !important;
+    background: rgba(12,6,1,0.75) !important;
   }
 
-  /* Badges — tinta em papel */
-  .badge-aprovada  { background: rgba(30,80,15,0.18) !important; color: #2A6A10 !important; border: 1px solid rgba(38,100,18,0.4) !important; }
-  .badge-reprovada { background: rgba(120,15,25,0.15) !important; color: #9A1820 !important; border: 1px solid rgba(150,20,28,0.4) !important; }
-  .badge-pendente  { background: rgba(140,100,10,0.18) !important; color: #8A6808 !important; border: 1px solid rgba(160,120,12,0.4) !important; }
-  .badge-revisao   { background: rgba(18,42,100,0.14) !important; color: #1E3E8A !important; border: 1px solid rgba(24,52,130,0.38) !important; }
+  /* Badges — tinta de facção sobre papel, legível e discreta */
+  .badge-aprovada  { background: rgba(28,80,14,0.13) !important; color: #246012 !important; border: 1px solid rgba(36,96,18,0.35) !important; }
+  .badge-reprovada { background: rgba(120,18,20,0.12) !important; color: #881618 !important; border: 1px solid rgba(140,20,22,0.35) !important; }
+  .badge-pendente  { background: rgba(110,82,6,0.12) !important;  color: #6E5006 !important; border: 1px solid rgba(140,106,8,0.35) !important; }
+  .badge-revisao   { background: rgba(18,48,120,0.11) !important; color: #183A88 !important; border: 1px solid rgba(22,56,144,0.32) !important; }
 
-  /* Botão principal */
+  /* Botão principal — couro gravado */
   .btn-sortear {
-    background: linear-gradient(180deg, #6A4A10 0%, #4E3408 100%) !important;
-    color: #E8C860 !important;
-    border: 1px solid #3A2606 !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(220,180,80,0.2) !important;
+    background: linear-gradient(180deg, #52360A 0%, #3C2606 100%) !important;
+    color: #DDB828 !important;
+    border: 1px solid #281804 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.28), inset 0 1px 0 rgba(210,172,50,0.18) !important;
   }
   .btn-sortear:hover {
-    background: linear-gradient(180deg, #7A5A18 0%, #5E4410 100%) !important;
-    box-shadow: 0 4px 14px rgba(60,35,5,0.4), inset 0 1px 0 rgba(220,180,80,0.25) !important;
+    background: linear-gradient(180deg, #664410 0%, #4C3208 100%) !important;
   }
 
-  /* Dice drawer */
+  /* Drawer de dados */
   .dice-drawer {
-    background: #DFD0A0 !important;
-    border-left: 1px solid rgba(90,60,15,0.3) !important;
+    background: #E8D9B0 !important;
+    border-left: 1px solid rgba(42,36,24,0.22) !important;
   }
 
-  /* Seção-title — tinta escura */
-  .section-title { color: #5A3C10 !important; }
-  .section-title::after { background: linear-gradient(to right, rgba(90,60,15,0.35), transparent 80%) !important; }
+  /* Section-title — small caps em tinta escura (como no manual) */
+  .section-title { color: #2A1A08 !important; }
+  .section-title::after { background: linear-gradient(to right, rgba(42,36,24,0.25), transparent 80%) !important; }
