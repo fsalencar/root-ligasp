@@ -102,7 +102,7 @@ function _renderTabAdmin() {
   tab.style.display = visivel ? '' : 'none';
 
   const tabP = document.getElementById('tabPartidas');
-  if (tabP) tabP.style.display = visivel ? '' : 'none';
+  if (tabP) tabP.style.display = ['admin', 'super_user', 'embaixador'].includes(currentUserRole) ? '' : 'none';
 }
 
 // ── Login ────────────────────────────────────────────────────────

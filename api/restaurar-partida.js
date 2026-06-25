@@ -31,18 +31,17 @@ module.exports = async function handler(req, res) {
     const roleRes  = await fetch(`${BASE}/rest/v1/perfis?user_id=eq.${caller.id}&select=role&limit=1`, { headers: srHeaders });
     const roleBody = await roleRes.json();
     const role     = roleBody?.[0]?.role || 'jogador';
-    if (!['admin', 'super_user'].includes(role)) {
+    if (!['admin', 'super_user', 'embaixador'].includes(role)) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
-    // Soft delete — move para lixeira
-    const delRes = await fetch(`${BASE}/rest/v1/partidas_liga?id=eq.${partida_id}`, {
+    const restRes = await fetch(`${BASE}/rest/v1/partidas_liga?id=eq.${partida_id}`, {
       method: 'PATCH',
       headers: { ...srHeaders, 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ deleted_at: new Date().toISOString() }),
+      body: JSON.stringify({ deleted_at: null }),
     });
-    if (!delRes.ok) {
-      const t = await delRes.text();
+    if (!restRes.ok) {
+      const t = await restRes.text();
       return res.status(500).json({ error: t });
     }
 
