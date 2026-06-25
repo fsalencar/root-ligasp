@@ -610,8 +610,12 @@ async function _confirmarSalvarJogador() {
 
   try {
     await _salvarJogadorNoBanco({ id: id || null, nome, ludopedia_usuario: ludoNick, ludopedia_id: ludoId });
-    // Se foi aberto a partir de um slot, vincula automaticamente
-    if (slotIdx !== '') {
+    // Se foi aberto a partir de um slot da liga, preenche o campo de nome da liga
+    const ligaSlotIdx = document.getElementById('fjLigaSlotIdx')?.value;
+    if (ligaSlotIdx !== undefined && ligaSlotIdx !== '' && typeof _selecionarJogadorLiga === 'function') {
+      _selecionarJogadorLiga(parseInt(ligaSlotIdx), nome);
+    } else if (slotIdx !== '') {
+      // Slot do sorteio
       const novoJogador = _jogadoresCadastrados.find(j => j.nome === nome);
       if (novoJogador) _setSlotJogador(parseInt(slotIdx), novoJogador);
     }
