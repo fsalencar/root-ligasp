@@ -1665,10 +1665,10 @@
     --fac-vagabundo:  #8A7A68;
     --fac-companhia:  #3A8A88;
     --fac-lacertas:   #B08028;
-    --fac-ducado:     #6A5098;
-    --fac-corvina:    #507068;
+    --fac-ducado:     #707070;
+    --fac-corvina:    #7040A8;
     --fac-lord:       #8A2838;
-    --fac-guardioes:  #607040;
+    --fac-guardioes:  #C8C8C8;
   }
   .hist-jogador[data-fac*="Marquesa"],
   .hist-jogador[data-fac*="marquesa"]   { border-left: 3px solid var(--fac-marquesa); padding-left: 7px; }
@@ -1792,10 +1792,10 @@
     --fac-vagabundo: #786850;
     --fac-companhia: #1A8080;
     --fac-lacertas:  #B08808;
-    --fac-ducado:    #644898;
-    --fac-corvina:   #385468;
+    --fac-ducado:    #606060;
+    --fac-corvina:   #5C3090;
     --fac-lord:      #8C1E28;
-    --fac-guardioes: #4E6C3A;
+    --fac-guardioes: #A0A0A0;
   }
 
   /* Fundo — pergaminho com manchas naturais de envelhecimento */
@@ -1961,10 +1961,10 @@
     --fac-vagabundo: #8A7A68;
     --fac-companhia: #3A8A88;
     --fac-lacertas:  #B08028;
-    --fac-ducado:    #6A5098;
-    --fac-corvina:   #507068;
+    --fac-ducado:    #707070;
+    --fac-corvina:   #7040A8;
     --fac-lord:      #8A2838;
-    --fac-guardioes: #607040;
+    --fac-guardioes: #C8C8C8;
   }
   body.modo-noturno {
     background:

@@ -264,8 +264,8 @@ function checkPreselectionReach() {
 const EXP_COLORS = { base:'#f0801a', riverfolk:'#20c0c0', underworld:'#c020c0', marauder:'#c04040', homeland:'#20a080' };
 const FAC_COLORS = {
   marquise:'#f0801a', eyrie:'#4090d0', alliance:'#40a040', vagabond:'#909090',
-  lizard:'#c8b820', riverfolk:'#20c0c0', duchy:'#c020c0', corvid:'#606060',
-  hundreds:'#c04040', keepers:'#c0a020', diaspora:'#20a080', council:'#7040d0', knaves:'#406040',
+  lizard:'#c8b820', riverfolk:'#20c0c0', duchy:'#707070', corvid:'#7040a8',
+  hundreds:'#c04040', keepers:'#c8c8c8', diaspora:'#20a080', council:'#7040d0', knaves:'#406040',
 };
 
 function renderExpansions() {
