@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=8">
+<link rel="stylesheet" href="css/style.css?v=9">
 
 </head>
 <body>
@@ -34,6 +34,8 @@
     <button id="cadastrarBtn" onclick="showAuthModal('cadastrar')" style="background:transparent;border:1px solid var(--gold-dark);color:var(--gold);border-radius:8px;padding:5px 11px;cursor:pointer;font-size:0.82rem;font-family:sans-serif;">Cadastrar</button>
     <div id="userInfo"></div>
     <div id="ludopediaStatus"></div>
+    <button id="btnModoNoturno" onclick="toggleModoNoturno()" title="Modo noturno / diurno"
+      style="background:transparent;border:1px solid var(--border2);border-radius:8px;padding:5px 9px;cursor:pointer;font-size:1rem;line-height:1;">🌙</button>
     <button class="btn-hamburger" onclick="abrirDiceDrawer()" title="Rolar dados de batalha">
       <span></span><span></span><span></span>
     </button>
@@ -395,7 +397,7 @@
 <script src="js/aprovacao.js?v=2"></script>
 <script src="js/admin.js?v=2"></script>
 <script src="js/partidas-admin.js?v=2"></script>
-<script src="js/liga.js?v=3"></script>
+<script src="js/liga.js?v=4"></script>
 <script type="module" src="js/dice.js?v=3"></script>
 <script src="js/pwa.js?v=2"></script>
 

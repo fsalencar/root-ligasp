@@ -1907,3 +1907,131 @@
   /* Section-title — small caps em tinta escura (como no manual) */
   .section-title { color: #2A1A08 !important; }
   .section-title::after { background: linear-gradient(to right, rgba(42,36,24,0.25), transparent 80%) !important; }
+
+  /* ── Legibilidade: cores hardcoded para fundo escuro → reescreve para pergaminho */
+  .reach-info          { color: #1A3A7A !important; background: rgba(26,58,122,0.09) !important; }
+  .reach-info strong   { color: #0E2450 !important; }
+  .reach-warn-box      { color: #5C3204 !important; background: rgba(140,80,0,0.09) !important; }
+  .reach-warn-box strong { color: #3A1E02 !important; }
+  .reach-ok            { color: #246018 !important; }
+  .reach-warn          { color: #7A4A04 !important; }
+  .badge-militant      { background: rgba(130,24,18,0.12) !important; color: #8C1812 !important; border: 1px solid rgba(160,28,20,0.32) !important; }
+  .badge-insurgent     { background: rgba(28,80,14,0.12) !important; color: #246012 !important; border: 1px solid rgba(36,96,18,0.32) !important; }
+  .ludo-btn-connect:hover { color: #246018 !important; }
+  .ludo-auto-status.success { color: #246018 !important; background: rgba(36,96,24,0.10) !important; border-color: rgba(36,96,24,0.35) !important; }
+  .ludo-auto-status.error   { color: #8C1812 !important; background: rgba(140,24,18,0.09) !important; border-color: rgba(160,28,20,0.30) !important; }
+  /* Texto de status de formulários */
+  #ligaStatus, #historicoLigaStatus { color: #8C1812 !important; }
+
+  /* ══════════════════════════════════════════════════════════════
+     MODO NOTURNO — restaura tema escuro original
+     ══════════════════════════════════════════════════════════════ */
+  body.modo-noturno {
+    --bg:        #1a1209;
+    --surface:   #241a0e;
+    --surface2:  #2e2010;
+    --border:    rgba(200,160,80,0.18);
+    --border2:   rgba(200,160,80,0.38);
+    --gold:      #c8a050;
+    --gold-light:#e8c878;
+    --gold-dark: #8b6a28;
+    --text:      #f0e8d0;
+    --text2:     #c8b890;
+    --text3:     #907050;
+    --red:       #c84028;
+    --red-bg:    rgba(200,64,40,0.12);
+    --green:     #4a8f30;
+    --green-bg:  rgba(74,143,48,0.12);
+    --blue:      #3070c8;
+    --blue-bg:   rgba(48,112,200,0.12);
+    --fac-marquesa:  #D4502A;
+    --fac-eyrie:     #4A6E9A;
+    --fac-alianca:   #3D7228;
+    --fac-vagabundo: #8A7A68;
+    --fac-companhia: #3A8A88;
+    --fac-lacertas:  #B08028;
+    --fac-ducado:    #6A5098;
+    --fac-corvina:   #507068;
+    --fac-lord:      #8A2838;
+    --fac-guardioes: #607040;
+  }
+  body.modo-noturno {
+    background:
+      radial-gradient(ellipse at 12% 0%, rgba(210,130,40,0.18) 0%, transparent 45%),
+      radial-gradient(ellipse at 88% 100%, rgba(40,90,28,0.14) 0%, transparent 45%),
+      #1a1209 !important;
+  }
+  body.modo-noturno::before { opacity: 0.035 !important; }
+  body.modo-noturno::after  { background: radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(0,0,0,0.38) 100%) !important; }
+
+  body.modo-noturno .header {
+    background: linear-gradient(180deg, #120d04 0%, #1e1408 60%, var(--surface) 100%) !important;
+    border-bottom: 2px solid rgba(200,160,80,0.4) !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.55) !important;
+  }
+  body.modo-noturno .header h1   { color: var(--gold-light) !important; }
+  body.modo-noturno .header p    { color: var(--text3) !important; }
+  body.modo-noturno .header-logo { color: var(--gold) !important; filter: drop-shadow(0 0 8px rgba(200,160,80,0.4)); }
+
+  body.modo-noturno .section {
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2) !important;
+  }
+  body.modo-noturno .hist-card {
+    background: var(--surface2) !important;
+    border: 1px solid var(--border) !important;
+    border-left: 3px solid rgba(200,160,80,0.25) !important;
+  }
+  body.modo-noturno .hist-card:hover { border-left-color: var(--gold) !important; box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important; }
+
+  body.modo-noturno .liga-tabs {
+    background: var(--surface) !important;
+    border: 1px solid var(--border2) !important;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.3) !important;
+  }
+  body.modo-noturno .liga-tab        { color: var(--text2) !important; border-right: none !important; }
+  body.modo-noturno .liga-tab:hover  { background: rgba(200,160,80,0.08) !important; color: var(--gold-light) !important; }
+  body.modo-noturno .liga-tab.active { background: var(--gold) !important; color: #150f04 !important; box-shadow: inset 0 -2px 0 rgba(0,0,0,0.15) !important; }
+
+  body.modo-noturno .player-field input,
+  body.modo-noturno .liga-field input,
+  body.modo-noturno .liga-field select,
+  body.modo-noturno .auth-input,
+  body.modo-noturno select,
+  body.modo-noturno textarea {
+    background: var(--surface2) !important;
+    border-color: var(--border) !important;
+    color: var(--text) !important;
+  }
+  body.modo-noturno .auth-box,
+  body.modo-noturno .modal-box  { background: var(--surface) !important; border-color: var(--border) !important; box-shadow: 0 12px 40px rgba(0,0,0,0.6) !important; }
+  body.modo-noturno .auth-modal,
+  body.modo-noturno #modalJogadores,
+  body.modo-noturno #modalPartidaDetalhe,
+  body.modo-noturno #modalFotoViewer { background: rgba(0,0,0,0.72) !important; }
+
+  body.modo-noturno .badge-aprovada  { background: var(--green-bg) !important; color: #80d060 !important; border: 1px solid rgba(74,143,48,0.3) !important; }
+  body.modo-noturno .badge-reprovada { background: var(--red-bg) !important;   color: #f08070 !important; border: 1px solid rgba(200,64,40,0.3) !important; }
+  body.modo-noturno .badge-pendente  { background: rgba(200,160,80,0.15) !important; color: var(--gold) !important; border: 1px solid rgba(200,160,80,0.3) !important; }
+  body.modo-noturno .badge-revisao   { background: var(--blue-bg) !important;  color: #70a8f0 !important; border: 1px solid rgba(48,112,200,0.3) !important; }
+  body.modo-noturno .badge-militant  { background: var(--red-bg) !important;   color: #f09080 !important; border: 1px solid rgba(200,64,40,0.3) !important; }
+  body.modo-noturno .badge-insurgent { background: var(--green-bg) !important; color: #80d060 !important; border: 1px solid rgba(74,143,48,0.3) !important; }
+
+  body.modo-noturno .reach-info        { color: #90b8f0 !important; background: var(--blue-bg) !important; }
+  body.modo-noturno .reach-info strong { color: #b8d0f8 !important; }
+  body.modo-noturno .reach-warn-box    { color: #f0b060 !important; background: rgba(200,120,0,0.12) !important; }
+  body.modo-noturno .reach-warn-box strong { color: #f8c878 !important; }
+  body.modo-noturno .reach-ok   { color: #80d060 !important; }
+  body.modo-noturno .reach-warn { color: #f09030 !important; }
+  body.modo-noturno .ludo-auto-status.success { color: #80d060 !important; background: rgba(74,143,48,0.08) !important; border-color: rgba(74,143,48,0.4) !important; }
+  body.modo-noturno .ludo-auto-status.error   { color: #f09080 !important; background: rgba(200,64,40,0.06) !important; border-color: rgba(200,64,40,0.3) !important; }
+
+  body.modo-noturno .btn-sortear {
+    background: linear-gradient(180deg, #e0b060 0%, #c8a050 60%, #b08038 100%) !important;
+    color: #1a1209 !important;
+    border: 1px solid #a07030 !important;
+  }
+  body.modo-noturno .dice-drawer { background: var(--surface) !important; border-left: 1px solid var(--border2) !important; }
+  body.modo-noturno .section-title { color: var(--gold) !important; }
+  body.modo-noturno .section-title::after { background: linear-gradient(to right, var(--border2), transparent) !important; }

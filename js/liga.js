@@ -826,6 +826,26 @@ async function enviarParaLiga() {
   }
 }
 
+// ── Modo noturno ─────────────────────────────────────────────────
+
+function toggleModoNoturno() {
+  const dark = document.body.classList.toggle('modo-noturno');
+  localStorage.setItem('root-modo-noturno', dark ? '1' : '0');
+  _atualizarBtnModo(dark);
+}
+
+function _atualizarBtnModo(dark) {
+  const btn = document.getElementById('btnModoNoturno');
+  if (btn) btn.textContent = dark ? '☀' : '🌙';
+}
+
+// Aplica preferência salva ao carregar
+(function() {
+  const dark = localStorage.getItem('root-modo-noturno') === '1';
+  if (dark) document.body.classList.add('modo-noturno');
+  document.addEventListener('DOMContentLoaded', () => _atualizarBtnModo(dark));
+})();
+
 // ── Toast global ─────────────────────────────────────────────────
 
 function mostrarToast(msg, tipo = 'info') {
